@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Install the toolchain at /opt
+tar -xvf gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.xz -C /opt
+
+# Setup up automatic cross toolchain PATH setup
+cat > /etc/profile.d/arm.sh << "CONTENT"
+# Setting up the path for ARM's cross toolchain
+
+export PATH=${PATH}:/opt/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin
+CONTENT
+
+# Install required 32-bit libs on a 64-bit system
+if [ "`uname -m | grep 64`" != "" ]
+then
+	if [ `lsb_release -si` == "Ubuntu" ]
+	then
+		apt-get install lib32stdc++6 lib32z1 lzop libncurses5-dev libncurses5:i386
+	else # Assuming CentOS
+		yum install glibc.i686 libstdc++.i686 zlib.i686 lzop ncurses-devel ncurses-libs.i686
+	fi
+fi

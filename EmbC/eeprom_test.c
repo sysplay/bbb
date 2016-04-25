@@ -23,7 +23,7 @@ int c_entry(void)
 		scan_char();
 		print_nl();
 		print_str("EEPROM Content: ");
-		if (eeprom_read(addr, (uint8_t *)(&u), sizeof(u)) != 0)
+		if (eeprom_read(addr, u.c, sizeof(u)) != 0)
 		{
 			print_str_nl("Read Error");
 		}

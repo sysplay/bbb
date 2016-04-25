@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ `id -u` != 0 ]
+then
+	echo "You need root privileges to run this script"
+	exit 1
+fi
+
 # Install the toolchain at /opt
 tar -xvf gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.xz -C /opt
 

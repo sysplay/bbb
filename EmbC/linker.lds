@@ -9,7 +9,6 @@ SECTIONS
 		*(.text)
 	}
 	.data : { *(.data /*.rodata*/) }	/* Global and static variables initialized by the application code */
-	.bss : { *(.bss) }		/* Global and static variables that are not initialized by the application code.
-								The compiler initializes this data to 0. */
+	.bss : { *(.bss) }		/* Global and static variables that are not initialized by the application code */
 	stack_top = 0x4030B800;	/* 6KiB stack */
 }

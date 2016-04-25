@@ -13,10 +13,8 @@ serial_test.elf: serial.o
 switch_test.elf: debug.o serial.o
 
 timer_test.elf: timer.o leds.o debug.o serial.o
-#timer_test.elf: timer.o interrupt.o leds.o debug.o serial.o
 
 eeprom_test.elf: eeprom.o i2c.o debug.o serial.o
-#eeprom_test.elf: eeprom.o i2c.o interrupt.o debug.o serial.o
 
 fw_app.elf: leds.o timer.o eeprom.o interrupt.o arm.o i2c.o debug.o serial.o
 

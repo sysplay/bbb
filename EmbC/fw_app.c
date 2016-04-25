@@ -1,3 +1,11 @@
+/*
+ * Command Requirements of the firmware:
+ * + l 0 - Switch off LED 0
+ * + l 1 - Switch on LED 0
+ * + b <msecs> - Blink LED 1 at an interval of <msecs> milliseconds
+ * + b 0 - Disable the blink of LED 1
+ * + r <addr> <cnt> - Read <acnt> bytes from EEPROM starting at address <addr>
+ */
 #include "debug.h"
 #include "leds.h"
 #include "timer.h"
@@ -22,7 +30,7 @@ static void shut_shell(void)
 
 int atoi(char *str, int *next)
 {
-	int i = 0, num = -1;
+	int i = 0, num = 0;
 
 	while ((str[i]) && ((str[i] == ' ') || (str[i] == '\t')))
 		i++;

@@ -1,0 +1,26 @@
+From da42c102db1ae468001f39366f10653487ac7797 Mon Sep 17 00:00:00 2001
+From: Max Galemin <maksim.galemin@gmail.com>
+Date: Wed, 29 Feb 2012 21:52:18 +1100
+Subject: [PATCH] Fix invalid ISP CCDC pipeline
+
+1. Fixed invalid ISP CCDC device entity in ccdc_hs_vs_isr().
+---
+ drivers/media/video/omap3isp/ispccdc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/omap3isp/ispccdc.c b/drivers/media/video/omap3isp/ispccdc.c
+index 54a4a3f..8f377db 100644
+--- a/drivers/media/video/omap3isp/ispccdc.c
++++ b/drivers/media/video/omap3isp/ispccdc.c
+@@ -1407,7 +1407,7 @@ static int __ccdc_handle_stopping(struct isp_ccdc_device *ccdc, u32 event)
+ static void ccdc_hs_vs_isr(struct isp_ccdc_device *ccdc)
+ {
+ 	struct isp_pipeline *pipe =
+-		to_isp_pipeline(&ccdc->video_out.video.entity);
++		to_isp_pipeline(&ccdc->subdev.entity);
+ 	struct video_device *vdev = ccdc->subdev.devnode;
+ 	struct v4l2_event event;
+ 
+-- 
+1.7.5.4
+

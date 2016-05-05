@@ -1,0 +1,117 @@
+From 7ff45357c6c7fd385aef5e4febfb7b18886e5bf9 Mon Sep 17 00:00:00 2001
+From: Max Galemin <maksim.galemin@gmail.com>
+Date: Thu, 23 Feb 2012 08:50:48 +1100
+Subject: [PATCH 1/3] Enable 1 GHz clock for Beagleboard-xM
+
+1. Enabled 1 GHz clock for Beagleboard-xM;
+2. Updated BogoMIPS value after updating CPU clock;
+---
+ arch/arm/mach-omap2/board-omap3beagle.c |   18 ++++++++++++------
+ arch/arm/mach-omap2/clock.c             |   10 ++++++++++
+ arch/arm/plat-omap/clock.c              |    2 +-
+ 3 files changed, 23 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+index 4a71cb7..00c4ba1 100644
+--- a/arch/arm/mach-omap2/board-omap3beagle.c
++++ b/arch/arm/mach-omap2/board-omap3beagle.c
+@@ -487,6 +487,7 @@ static void __init beagle_opp_init(void)
+ 	/* Custom OPP enabled for all xM versions */
+ 	if (cpu_is_omap3630()) {
+ 		struct device *mpu_dev, *iva_dev;
++		unsigned long mpu_freq, iva_freq;
+ 
+ 		mpu_dev = omap_device_get_by_hwmod_name("mpu");
+ 		iva_dev = omap_device_get_by_hwmod_name("iva");
+@@ -496,13 +497,18 @@ static void __init beagle_opp_init(void)
+ 				__func__, mpu_dev, iva_dev);
+ 			return;
+ 		}
++#ifdef CONFIG_OMAP_SMARTREFLEX
++		mpu_freq = 1000000000;
++		iva_freq = 800000000;
++#else
++		mpu_freq = 800000000;
++		iva_freq = 660000000;
++#endif
+ 		/* Enable MPU 1GHz and lower opps */
+-		r = opp_enable(mpu_dev, 800000000);
+-		/* TODO: MPU 1GHz needs SR and ABB */
++		r = opp_enable(mpu_dev, mpu_freq);
+ 
+ 		/* Enable IVA 800MHz and lower opps */
+-		r |= opp_enable(iva_dev, 660000000);
+-		/* TODO: DSP 800MHz needs SR and ABB */
++		r |= opp_enable(iva_dev, iva_freq);
+ 		if (r) {
+ 			pr_err("%s: failed to enable higher opp %d\n",
+ 				__func__, r);
+@@ -510,8 +516,8 @@ static void __init beagle_opp_init(void)
+ 			 * Cleanup - disable the higher freqs - we dont care
+ 			 * about the results
+ 			 */
+-			opp_disable(mpu_dev, 800000000);
+-			opp_disable(iva_dev, 660000000);
++			opp_disable(mpu_dev, mpu_freq);
++			opp_disable(iva_dev, iva_freq);
+ 		}
+ 	}
+ 	return;
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index 1f3481f..5dff89d 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -22,6 +22,7 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/bitops.h>
++#include <linux/cpufreq.h>
+ #include <trace/events/power.h>
+ 
+ #include <asm/cpu.h>
+@@ -462,6 +463,7 @@ int __init omap2_clk_switch_mpurate_at_boot(const char *mpurate_ck_name)
+ {
+ 	struct clk *mpurate_ck;
+ 	int r;
++	u32 rate_old;
+ 
+ 	if (!mpurate)
+ 		return -EINVAL;
+@@ -470,6 +472,8 @@ int __init omap2_clk_switch_mpurate_at_boot(const char *mpurate_ck_name)
+ 	if (WARN(IS_ERR(mpurate_ck), "Failed to get %s.\n", mpurate_ck_name))
+ 		return -ENOENT;
+ 
++	rate_old = mpurate_ck->rate;
++
+ 	r = clk_set_rate(mpurate_ck, mpurate);
+ 	if (IS_ERR_VALUE(r)) {
+ 		WARN(1, "clock: %s: unable to set MPU rate to %d: %d\n",
+@@ -481,6 +485,12 @@ int __init omap2_clk_switch_mpurate_at_boot(const char *mpurate_ck_name)
+ 	calibrate_delay();
+ 	recalculate_root_clocks();
+ 
++#if defined(CONFIG_SMP)
++	per_cpu(cpu_data, 0).loops_per_jiffy = cpufreq_scale(per_cpu(cpu_data, 0).loops_per_jiffy, rate_old, mpurate_ck->rate);
++#else /* CONFIG_SMP */
++	loops_per_jiffy = cpufreq_scale(loops_per_jiffy, rate_old, mpurate_ck->rate);
++#endif
++
+ 	clk_put(mpurate_ck);
+ 
+ 	return 0;
+diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
+index 567e4b5..a62dd6b 100644
+--- a/arch/arm/plat-omap/clock.c
++++ b/arch/arm/plat-omap/clock.c
+@@ -186,7 +186,7 @@ static int __init omap_clk_setup(char *str)
+ 	if (!mpurate)
+ 		return 1;
+ 
+-	if (mpurate < 1000)
++	if (mpurate <= 1000)
+ 		mpurate *= 1000000;
+ 
+ 	return 1;
+-- 
+1.7.5.4
+

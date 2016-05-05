@@ -1,0 +1,85 @@
+Embedded Linux Kernel Internal Package
+--------------------------------------
+
++ bbb directory contains the following sub-directories:
+
+  - Kernel
+    |- patches - Contains the patches to be applied to the kernel & the configuration file.
+
+  Note: These patches are for the kernel version 3.12.9.
+
+  - Apps - Applications to be used for testing the driver
+  - Driver - Driver source codes used in the workshop
+
+These code templates are used in the Linux Kernel Internals workshop conducted
+at SysPlay eLearning Academy for You. For details on the various workshops,
+check out at http://sysplay.in/index.php?pagefile=weekend_workshops, or
+contact us at <workshop@sysplay.in>
+
+For the slide sets from the workshop, visit:
+http://sysplay.in/index.php?pagefile=elki_workshop_slides
+
+Pre-requisites
+--------------
+
++ Linux PC or VM on Windows
++ Minicom or Gtk term installed with baud rate of 115200, 8 data bits, No parity, 1 Stop bit.
++ Tftp sever on Host.
++ Beaglebone Black
++ Source code downloaded from sysplay ftp server.
++ Toolchain can be downloaded from http://releases.linaro.org/14.04/components/toolchain/binaries/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.bz2
+
+   Building the Kernel
+   ------------------
+  + Below are the steps for the same:
+  - Download the kernel source code from below link:
+    ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-3.12.19.tar.bz2
+  - untar it with 'tar -jxvf linux-3.12.19.tar.bz2'.
+  - Copy the patches folder in kernel source code directory as per below command:
+    > cp -r patches <kernel_dir>/patches.
+  - Apply the patches to the kernel. Execute the following command in kernel source directory:
+    > quilt push -a 
+  - Configure the kernel with below steps:
+    + Copy the patches/beaglebone as .config in kernel top level directory.
+    + make ARCH=arm menuconfig
+  - Compile the kernel with make ARCH=arm CROSS_COMPILE=<toolchain-prefix> zImage
+  - This will give you the zImage at linux-3.12.9/arch/arm/boot/
+  - Transfer this is to the board and reboot to boot with new kernel image.
+
+    Building the driver as a part of Kernel
+    ---------------------------------------
++ In linux, drivers can be compiled in two ways - either as part of the kernel or as modules so that they
+  can be plugged dynamically into the kernel. Here, we will build the driver as the part of the kernel, so
+  that it is loaded during boot up. All the relevant code can be found at Templates/Kernel/.
++ Here, we will add a small driver to the kernel. Below are the steps:
+   - Copy the file char_driver.c to linux-3.2.19/drivers/char/.
+   - Edit the Kconfig file in drivers/char/ and add the following:
+       config MY_DRIVER
+       tristate "My Driver"
+       help
+        Adding this small driver to the kernel
+    - This will show up as My Driver in menuconfig which you can either build as part of kernel, or as a
+      module.
+    - Edit the makefile to add the following entry:
+      obj-$(CONFIG_MY_DRIVER)         += char_driver.o
+      This will boil down to either obj-y, obj-m or obj-n, depending on the option selected in menuconfig.
+    - In char_driver.c, put some message in init_char() function and that message will be displayed during
+      kernel booting.
+    - Once, the modifications are done, configure the kernel with make ARCH=arm menuconfig. Under the device
+      drivers-> Character devices, there will be a option MY_DRIV0ER, just select it. Exit & save the config.
+    - This will add the CONFIG_MY_DRIVER=y in the .config file which will be used in Makefile. The Kconfig &
+      Makefile have been kept in the Templates/Kernel/ folder for your reference.
+    - Now, compile the kernel with make ARCH=arm CROSS_COMPILE=<toolchain-prefix>- zImage
+    - Boot the board with above Image and you should see the message which you added in init_char.
++ To test the driver, there is one application by name file_ops in Templates/Sourches/Apps/ directory. Compile
+  the application and run it on the board. You will see, it gives the ascii code for the last character of the   string written.
+ 
+   Compiling the Driver Code
+   ------------------------- 
++  Now, intention is to build the kernel module using the kernel source code. Below are the steps:
+    + cd Templates/Sources/Driver/
+    + Open the Makefile & update the 'KERNEL_SOURCE' variable with the path of kernel directory.
+    + Update the 'CROSS_COMPILE' with your toolchain prefix say 'arm-linux-'.
+    + Execute 'make' and this should generate the .ko file. Transfer this to the board using tftp or scp.
++ Once transferred, insert the module with 'insmod <module_name.ko>'.
+   

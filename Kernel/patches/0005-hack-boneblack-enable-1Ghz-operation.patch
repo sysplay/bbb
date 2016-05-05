@@ -1,0 +1,44 @@
+From d7c304cbfab558b5e468681e10f8eb1518e00caf Mon Sep 17 00:00:00 2001
+From: Robert Nelson <robertcnelson@gmail.com>
+Date: Thu, 12 Dec 2013 13:03:55 -0600
+Subject: [PATCH 5/5] hack: boneblack: enable 1Ghz operation
+
+Signed-off-by: Robert Nelson <robertcnelson@gmail.com>
+---
+ arch/arm/boot/dts/am335x-boneblack.dts |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+index 61842c1..ee0b822 100644
+--- a/arch/arm/boot/dts/am335x-boneblack.dts
++++ b/arch/arm/boot/dts/am335x-boneblack.dts
+@@ -10,6 +10,26 @@
+ #include "am33xx.dtsi"
+ #include "am335x-bone-common.dtsi"
+ 
++/ {
++	cpus {
++		cpu@0 {
++			cpu0-supply = <&dcdc2_reg>;
++			/*
++			 * To consider voltage drop between PMIC and SoC,
++			 * tolerance value is reduced to 2% from 4% and
++			 * voltage value is increased as a precaution.
++			 */
++			operating-points = <
++				/* kHz    uV */
++				1000000	1325000
++				800000	1300000
++				600000  1112000
++				300000   969000
++			>;
++		};
++	};
++};
++
+ &hdmi {
+ 	status = "okay";
+ };
+-- 
+1.7.10
+

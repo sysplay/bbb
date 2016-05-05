@@ -1,0 +1,9 @@
+0001-ARM-OMAP3-do-not-register-non-dt-OPP-tables-for-devi.patch
+0001-i2c-EEPROM-In-kernel-memory-accessor-interface.patch
+0002-ARM-CUSTOM-Build-a-uImage-with-dtb-already-appended.patch
+0002-ARM-OMAP2-add-missing-lateinit-hook-for-calling-pm-l.patch
+0002-grove-i2c-Add-rudimentary-grove-i2c-motor-control-dr.patch
+0003-ARM-OMAP3-use-cpu0-cpufreq-driver-in-device-tree-sup.patch
+0003-defconfig-add-for-mainline-on-the-beaglebone.patch
+0004-ARM-dts-OMAP3-add-clock-nodes-for-CPU.patch
+0005-hack-boneblack-enable-1Ghz-operation.patch

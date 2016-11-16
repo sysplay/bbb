@@ -1,0 +1,5 @@
+serverip=192.168.20.140
+ipaddr=192.168.20.230
+ramboot=setenv bootargs console=ttyO0,115200n8 root=/dev/ram0 rw ramdisk_size=16384 initrd=0x81000000,16M rootfstype=ext2
+uenvcmd=run ramboot;tftpboot 81000000 rd-ext2.bin; tftpboot 80200000 uImage; tftpboot 82000000 am335x-boneblack.dtb; bootm 0x80200000 - 0x82000000;;
+

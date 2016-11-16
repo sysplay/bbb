@@ -1,0 +1,453 @@
+Embedded Linux Package
+----------------------
+
++ Templates directory contains the following sub-directories:
+
+  -Baremetal - Contains the baremetal code for the Beagleboard-Xm
+  -BootingThrdPartition - Contains the U-boot environmental file & root filesytem for booting
+   through the third partition
+  -BringUpImages - Contains the images required for board bring up.
+  -BlinkingLed - Code for blinking the user leds for BeagleBoard
+  -BootingNfs - Environmental file for booting through the NFS.
+  -CreatingRootFs - Contains the busybox and ramdisk for minimal Root Filesystem.
+  -Kernel - Contains the working configuration file, patches & image for the kernel. Kernel Source
+   code can be downloaded from ftp://ftp.kernel.org/pub/linux/kernel/v3.x/. Download the 3.12.9 version.
+  -PlatformDriver - Contains the platform driver code.
+  -SerialBooting - First and Second stage bootloader images for booting through serial.
+  -Toolchain - Contains the packages for building the toolchain.
+  -UBoot - U-boot source code and image is placed here.
+  -VideoApp - Contains the mjpgstreamer source code for streaming the webcam videos over http
+
+These code templates are used in the Embedded Linux workshops conducted
+at SysPlay eLearning Academy for You. For more details on the workshops,
+check out at http://sysplay.in/index.php?pagefile=weekend_workshops, or
+contact us at <workshop@sysplay.in>
+
+For the slide sets from the workshop, visit:
+http://sysplay.in/index.php?pagefile=bels_workshop_slides, and
+http://sysplay.in/index.php?pagefile=elpa_workshop_slides
+
+Pre-requisites
+--------------
+
++ Linux PC or VM on Windows
++ Minicom or Gtk term installed with baud rate of 115200, 8 data bits, No parity, 1 Stop bit.
++ Tftp sever on Host.
++ Beaglebone Black
++ Images & Source Code downloaded from sysplay ftp server.
++ Install the following packages:
+    - Toolchain can be downloaded from http://releases.linaro.org/14.04/components/toolchain/binaries/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.bz2 
+    - automake
+    - bison
+    - curl
+    - cvs
+    - flex
+    - gawk
+    - gcc-c++
+    - gperf
+    - libstdc++-devel
+    - libtool
+    - makeinfo (for Ubuntu) or texinfo
+
+Hands ON
+--------
+
+1. Boot the Beagle board with default Images
+   -----------------------------------------
++ Beagle board comes with 4GB eMMC card with debian distro installed.
+
+ - Configure the minicom with baud rate of 115200, 8 data bits, no stop bit, 1 parity.
+ - Connect the TTL to Serial device to the board
+ - Power up the Beagle Board with usb cable or Adapter.
+ - The booting messages will be seen on the Minicom and finally you will get the Login prompt.
+ - Enter the user name as root. No password required.
+ - Type df -h and you will be able to see two partitions /dev/mmcblk0p1 and /dev/mmcblk0p2 mounted
+   on /media/mmcblk0p1 and /media/mmcblk0p2 respectively. The details of the partitions are as below:
+   + First partition (/media/mmcblk0p1) is of type vfat (FAT32) of size ~116MB. It contains the files such
+     as MLO (First stage bootloader), u-boot.bin (Second stage bootloader), uEnv.txt (File containing the
+     list of arguments to be passed to the kernel and other u-boot specific environmental variables)
+   + Second partition (/media/mmcblk0p2) contains the Root File System of type ext3. In /boot directory,
+     there will be a file called uImage which is a kernel image.
+
+2. Bring up the board
+   ------------------
++ Here the objective is to bring up the board from the stage where we are getting the u-boot prompt, but it
+  is not able to get the kernel due to corrupted filesystem. So, first step is to destroy the board. But, in
+  order to make the things simpler, we will load the version of u-boot designed for this purpose. The images
+  for the same are provided at Templates/BringUpImages/
+
+   For this follow the below steps:
+
+    - Mount the first partition on the /mnt with command mount /dev/mmcpblk0p1 /mnt.
+    -  cd /mnt. Now, use scp or tftp command as below:
+        For scp, use scp <user>@<ipaddr>:<path to file> .
+        For tftp, use tftp -g <serverip> -r <remote_file>
+    - Using the above command get the files MLO, u-boot_bringup.img and user.txt from the 
+      Templates/BringUpImages.
+    - Open the user.txt file and change the ipaddr & serverip address as per your requirements. This step
+      is necessary when having multiple boards in the n/w, so that there is no duplication of ip address.
+    - Come out of the /mnt and umount the same. Also, umount the /media/mmcblk0p1 (if mounted) in order to 
+      prevent the first partition from getting deleted when we will delete the whole root file system.
+    - Now go to / partition and do rm -rf *. This will delete all the contents of the Root File sytem.
+      Now, you won't be able to execute any command on beagle board, since root file system is deleted.
+
+  Since, there is neither the filesystem, nor the kernel available, we have to get the kernel as well
+  as the filesystem from the somewhere. This is where comes the concept of ramdisk.So, reboot the board
+  and while booting just press the user button (next to reset button). This will allow us to boot from
+  the Ramdisk. So, first it will take the Root Fs from the tftp server, then the kernel and will boot with
+  the same. Now, the next task is to recreate the partitions and copy the required root fs onto that. So,
+  follow the below steps:
+    - fdisk /dev/mmcblk0 and delete the previously created partitions by typing the command 'd' at the
+      fdisk.
+    - Check the partitions with 'p' command and make sure that the No. of heads is 255, sectors/track is 63.
+      If not, execute the below commands:
+       - Type 'x' which will switch you to the expert mode.
+       - Type h and enter the no of heads to 255.
+       - Type s and enter the no of sectors to 64.
+       - Then calculate the no. of cylinders with (Total no. of bytes on SD Card)/heads/sectors/512. 
+       - Type c and enter the calculated number (truncate, don't round off).
+       - Switch back to the normal mode by typing 'r' command
+    - Create the first primary partition with 'n' command, select the type as p, Partition number as 1.
+      Enter the first cylinder as 1 and last cylinder as +116M. This will create the first partition of
+      size 116M. This partition has to be of type Windows since we need to create the FAT32 filesystem
+      on the same. So type 't' & enter the code as 'c' which will make it FAT32 type partition. Now, make
+      it as bootable partition by typing 'a' command. Now, check the check the created partition with p
+      and it should show '*' under Boot tab.
+    - Now, create the second partition by typing 'n' and 'p' and '2'. For first cylinder, enter the default
+      value. For Last cylinder enter the +3G. This will create the linux partition of size 3 GB.
+    - Now, use rest of the space for third partition. For this, press, 'n', 'p', '3' and enter default value
+      for first and last cylinder. This will give you the third partition of size ~1GB.
+    - Type, w to write the partition table to the SD card.
+  Next step is to create the filesystem onto the newly created partitions. Follow the below steps for the 
+  same:
+    - Create the FAT32 filesystem on the first partition, since the type of filesystem which internal
+      ROM code can read from. For this the command is:
+      mkfs.vfat -F 32 /dev/mmcblk0p1 -n boot
+    - Create the ext2 filesystem on the second & third partitions with following commands:
+      mke2fs -L FirstRootFs /dev/mmcblk0p2
+      mke2fs -L SecondRootFs /dev/mmcblk0p3
+  + Next Step is to copy the MLO, u-boot.img, uEnv.txt, user.txt and am335x-boneblack.dtb file into 
+    the first partition.
+    - Bring the network up by setting up the ipaddress with ifconfig eth0 <ipaddr>
+    - Then, mount the first partition with mount /dev/mmcblk0p1 /mnt, cd /mnt and
+      give tftp command as tftp -g <serverip> -r <file_name>.
+    - Unmount the first partition with umount /mnt.
+  + Now, our intention the copy the RootFs into the 2nd Partition. For this follow the below steps:
+    - Mount the Second Partition on /mnt with mount /dev/mmcbklk0p2 /mnt.
+    - cd /mnt. tftp -g <ipaddr> -r RootFs.tgz.
+    - untar the RootFs.tgz and then remove the RootFs.tgz.
+    - umount the Second partition and then reboot. The system should come up with default images.
+
+3. Booting through the Serial
+   --------------------------
++ Here, the intention is to boot the board from the stage where nothing is there on the SD Card. Not even
+  the X-Loader. So, we need to get everything from some of the Peripheral. Here, we will be using the serial
+  port for getting the X-Loader & U-boot. And once we get the U-boot, we will be using the RamDisk to boot
+  the system. All the required tools and images can be found at Templates/SerialBooting/. Below are the
+  steps:
+    - Open the minicom terminal. Press Ctrl + a and then s. 
+    - This will give you the option to boot from zmodem, xmodem, ymodem and so on.
+    - Select the Xmodem protocol. From there, select the image for first stage bootloader. This will
+      download the first stage bootloader. 
+    - Repeat the above mentioned step to download the u-boot.bin
+    - On successful download, you would see u-boot prompt.
+    - Once you get the u-boot, you can boot it using any of the interfaces.
+
+4. Baremetal Code
+   --------------
++ Inorder to test the interfaces, we can use the baremetal code which is provided in Templates/Baremetal/.
++ Compile the program with make command and it will give you u-boot.bin. Transfer the u-boot.bin to board
+  using the same set of commands as we used with serial booting.
++ Once the transfer is done, type any string and the same string will displayed.
+
+5. Adding the Command in the U-boot
+   --------------------------------
++ The source code for most of the commands in the u-boot can be found at u-boot/common/. These files usually
+  start with cmd_*. Now, we need to add the command of our own in u-boot. For this the u-boot code can be
+  found at Templates/UBoot/. Follow the below steps to add the command to the u-boot.
+  - In the common directory, create the file by cmd_myprint.c (The file is present in the u-boot code)
+  - Define a function with a prototype int do_print(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+  - Just add some printf statement in the function.
+  - The next step is to the fill the macro U_BOOT_CMD. It takes the following parameters:
+     + First parameter is the name you want to give to your command, I have used my_print.
+     + Second parameter is the number of the paramters to be passed to the command. I have given it as 1.
+     + Third parameter is the number of times you want to repeat the command. Give it as 1.
+     + Fourth parameter is the name of the function you want the command to execute. I have give it as
+       do_print.
+     + Fifth parameter is the string describing the usage of the command.
+     + Sixth parameter is the string giving short help on the command.
++ Next step is to modify the Makefile in the common directory and add the name of the file in that.
+     - COBJS-$(CONFIG_CMD_MYPRINT) += cmd_myprint.o
++ Now, we need to add the #define for CONFIG_CMD_MYPRINT in u-boot/include/configs/omap3_beagle.h.
+
++ Once done, compile the u-boot with following steps:
+   - make distclean
+   - make am335x_evm_config
+   - make CROSS_COMPILE=arm-linux-gnueabihf-
++ Transfer the u-boot.bin using the steps given in serial booting.
++ Once transfered, you will find the myprint command in u-boot by typing help.
+
+6. Booting through the third partition
+   -----------------------------------
++ Here, the intention is to boot through the third partition which we created while recovering the board.
+  Whenever, we will press the user button, the board will boot through the third partition with kernel 3.2.8.
+  And if no user button is pressed the board will boot through the second partition with kernel 2.6.32. All
+  the images related to this can be found at Templates/BootingThrdPartition/. Below are the steps:
+    - Mount the third partition with command mount /dev/mmcblk0p3 /mnt and cd /mnt
+    - Get the Rootfs with command tftp -g <serverip> -r rootfs_full.tar.gz
+    - untar the rootfs with tar -zxvf rootfs_full.tar.gz and then delete rootfs_full.tar.gz.
+    - unmount the third partition with umount /mnt
+    - Now, we need to transfer the Environment file related to third partition to the board. For this, mount
+      the first partition with mount /dev/mmcblk0p1 /mnt and copy the file EnvMMCThrd.txt as user.txt.
+       tftp -g <serverip> -r EnvMMCThrd.txt -l user.txt
+    - umount the partition and reboot the board.
+    - While booting, press the user button and you will see that the board boots from the third partition.
+
+7. Creating the Root File System
+   -----------------------------
++ Here, the intention is to create the minimal rootfs. All the images/Source code can be found at
+  Templates/CreatingRootFS/
++ The first step is to compile the busybox. Follow the below steps for the same:
+  - untar the busybox with tar -jxvf busybox-1.22.1.tar.bz2.
+  - make menuconfig and select the desired options.
+      - In Busybox settings->General Configurations->Support for SUID/SGID handling (deselect)
+      - In Build options->Cross Compiler Prefix- <toolchain prefix>-
+      - You can select rest of the things on the basis of the commands required.
+  - Exit and save the configuration.
+  - type make and this will compile the busybox.
++ Now, create the Root Files by creating the directory Target.
++ Once the busybox is compiled, install the busybox into the Target by using the command:
+    - make CONFIG_PREFIX=<path_to_target> install. This will create three directories bin, sbin and usr.
++ Next step is to create the additional directories such as /dev, /proc, /root and so on. For this, copy
+  the script create.sh from Templates/CreatingRootFS/Target/ to the Target directory and run the script.
+  This will create the required directories and copies the required libraries from the Toolchain.
++ Now, create the fstab file under etc folder with following contents:
+    proc	/proc	  proc   defaults	0	0
+    none	/dev/pts  devpts mode=0622	0	0
+
++ Add the files required by login utilities:
+    - Add root:x:0:root in etc/groups
+    - Add root:0:0:/root:/bin/ash in etc/passwd
+    - Add 127.0.0.1 localhost in etc/hosts
++ Add the inittab, init.d/rcS and mdev.conf file from Templates/CreatingRootFS/Target/etc/ to etc directory
+  of your target.
++ Once, the filesystem contents are ready, we need to the ramdisk image and will copy the contents of Target
+  into that. For this following are the steps:
+   - Create the 16M file of 'zero' with dd if=/dev/zero of=rd-ext2.bin bs=1k count=16384
+   - Create the empty filesystem with mke2fs -F -m 0 -b 1024 rd-ext2.bin
+   - Fill the filesytem with contents with following commands:
+	mount -t ext2 rd-ext2.bin /mnt -o loop
+	tar -C Target -cf - . | tar -C /mnt -xf -
+   - unmount the filesystem with /mnt.
++ Once, the Ram Disk is created, we need to test it by booting the beagle board through with Ram disk as
+  filesystem. Change the name of the Ram Disk image in EnvRam.txt to the name of your ram disk.
+   Follow the below steps on the target board:
+  - setenv serverip <ipaddr>
+  - setenv ipaddr <ipaddr>
+  - usb start
+  - tftpboot EnvRam.txt
+  - run importbootenv
+  - run uenvcmd
++ This will allow you to boot from ram disk image created above.
+
+8. Booting through the NFS
+   -----------------------
++ Here, the intention is to boot from the Root Fs which is mounted through NFS. For this, the host should have
+  the nfs server running and the kernel in the target should be configured with nfs client. Images can be
+  found at Templates/BootingNfs directory
++ In EnvNfs.txt, modify nfsroot=<nfs_serverip>:<path_to_rootfs> and ip=<static_ip_for_board>
++ Execute the following commands on the target:
+   - setenv serverip <serverip>
+   - setenv ipaddr <ipaddr>
+   - usb start
+   - tftpboot EnvNfs.txt
+   - run importbootenv
+   - run uenvcmd
++ This will the boot the board with nfs filesystem
+
+9. Multiboot u-boot
+   ----------------
++ Here, the u-boot is modified in such a way that it gives out the options for booting in various ways. The
+  images/Source code for the same can be found at Templates/Multiboot/.The only modification is in 
+  common/autoboot.c. Below are the steps to achieve the same.
+  - Compile the u-boot on target with make CROSS_COMPILE=<toolchain prefix>_. You will get the u-boot.img out 
+    of this.
+  - Boot the system with existing kernel. Bring up the ethernet with ifconfig eth0 <ipaddr> on the target.
+  - Mount the first partition with mount /dev/mmcblk0p1 /mnt. cd /mnt
+  - Get the u-boot.img compiled above, EnvNfs.txt, EnvConsole.txt, EnvUsb.txt, EnvMMC.txt, EnvRam.txt with
+    tftp command as below:
+    tftp -g <serverip> -r <file_name_remote> -l <file_name_local>
+  - Once done, umount the first partition and reboot.
+  - Stop at the u-boot and select the desired boot option.
+
+10. Building the Toolchain
+    ----------------------
++ In this hands on, we will build the toolchain using Crosstool. All the relevant directories can be found at
+  Templates/Toolchain/. Follow the below steps to build the toolchain.
+  - First step is to install the cross tool in your system. Following are the steps for the same: 
+     - mkdir -p /files/beagle
+     - tar -jxvf cross-tool-ng-1.15.2.tar.bz2  -C /files/beagle
+     - cd  /files/beagle/cross-tool-ng-1.15.2/
+     - ./configure --prefix=/opt/beagleBoard-xM
+     - make
+     - make install
+     - cp ct-ng.comp  /etc/bash_completion.d/
+     - export PATH=$PATH:/opt/beagleBoard-xM/bin/
+   - Next step is to build the toolchain. For this follow the below steps:
+     - cd /files/beagle
+     - mkdir ct-build src
+     - cd ct-build/
+     - The Cross tool by default is searches for the required source code in .build/tarballs directory. If
+       not found, it will try to download it from websites. So, inorder to prevent that we will be putting the
+       required packages in .build directory. For this we will create the .build directory in /files/beagle/
+       with 'mkdir .build' and copy the Templates/Toolchain/sources.tgz in .build directory
+     - cp Templates/sources.tgz .build/
+     - untar the sources with tar -zxvf sources.tgz and this will create the directory by name tarballs which
+       contains all the required sources.
+     - Now, configure the cross tool for required toolchain by using ct-ng menuconfig and select the following
+       options:
+        - In Target options->Floating Point->softfp
+        - In Operating Systems->Target OS - Select as Linux (3.3.4)
+        - Binary Utilities - select 2.21.1a
+        - C Compile - select 4.3.6
+        - C Library - select as glibc, glibc version ->2.14.1
+        - Companion Libraries -> select mpfr 3.0.0, gmp - 4.3.2
+      - Exit the configuration menu and save the configuration.
+     - To build the toolchain, type ct-ng build
++ This is give you the toolchain in /root/x-tools/arm-unknown-linux-gnueabi/bin/ directory
++ You can test the toolchain by compiling a small C program and executing it on the board.
+
+11. Building the Kernel
+    -------------------
++ All the relevant sources can be found in Templates/Kernel directory. Kernel can be dowloaded from 
+  ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-3.12.9.tar.gz. Below are the steps:
+  - untar the linux-3.12.9.tgz with  tar -zxvf linux-3.2.8.tgz. This will give you the directory linux-3.2.19.
+  - Go to the directory linux-3.12.9. Copy the patches folder from Templates/Kernel.
+  - To patch the kernel, execute the command 'quilt push -a'. 
+  - This will apply the necessary patches
+  - Now, we want to configure the kernel, for this we will use the default configuration file provide in patch
+    folder with name 'beaglebone'. Copy this as .config file in linux-3.2.19 directory. In order to
+    configure the kernel as per the .config file, use the command make ARCH=arm oldconfig. This will configure
+    the kernel as per the options in .config file.
+  - Now, compile the kernel with make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf vmlinux. This will give you vmlinux.
+  - The vmlinux can't be understood by u-boot. So, for this, we need to wrap the kernel in such a way that
+    u-boot understands it. This is a two stage process. First convert the vmlinux into binary by using
+    the command arm-linux-objcopy -O binary vmlinux vmlinux.bin
+  - Then convert the binary into the format understood by u-boot. For this, the utility called mkimage is
+    provided in u-boot/tools/. Below is the command:
+     mkimage -A arm -O linux -T kernel -C none -a 0x80008000 -e 0x80008000 -n linux-3.12.9 -d vmlinux.bin uImage
+  - This will give you uImage. Transfer the same to the board using any of the above method. 
+
+ 
+12. Running the Embedded Application
+    --------------------------------
++ Here, the intention is to blink the leds available on the board. There are two applications available for
+  this. All the source code can be found at Templates/BlinkingLed.
++ First is the script, which blinks the led usr0 with following command:
+   echo  [0/1] > /sys/class/leds/beaglebone\:green\:heartbeat/brightness
++ Another code is the C Program, which directly accesses the registers in the Controller to blink the led.
+  Below is the short description of the application:
+  - As per the Beaglebone reference manual page 67(can found at Template/Docs), leds are connected
+    to the pins GPIO1_21 to GPIO1_24 of the controller.
+  - Each pin can have upto 8 different modes of operations. So, the first requirement is to configure the pin
+    in GPIO mode which is mode 7 as can be seen from datasheet am3358 controller, page 23. The register for the
+    same is located in control module whose base address is at 0x44E10000 as seen on page 180 of TRM. The
+    offset for gpmc a5 is at 854 as seen from the page 1366 of TRM. We need to set the mode and pull up as per
+    the register details on page 1422 of TRM.
+  - Next thing is to set the direction of the pin as output. The base address for GPIO1 registers is at 
+    0x4804C000 as seen from the page 182 of TRM Rev-L. The offset for GPIO_OE is at 0x134 as seen from the
+    page 4877 of datasheet.
+  - Once, the direction is set, the next step is to set & clear the bit in the GPIO_DATAOUT register. It is
+    located at the offset 0x13C as seen on page 4877 of TRM.
++ Compile the above the application and transfer it to the board. The Led will blink at an interval of 1 Sec.
+
+13. Saving the Environmental Variables in MMC
+    -----------------------------------------
++ By default, command saveenv (u-boot) doesn't works in Beagle Board xm as the u-boot is configured to save the  environmental variables in NAND and there is no NAND flash available in this board. So, the intention is to
+  configure the u-boot to save the environmental variables in MMC. Relevant files can be found at 
+  Templates/U-Boot/omap3_beagle_mmc.h. Below are the steps:
+
+  - While partitioning the MMC, start the first partition from the 4th cylinder which means that 3 cylinders 
+    i.e 3 * 255 * 512 *63 = ~25 MB are being kept for the environmental variables.
+
+  - Remove the configuration macros such as 
+    	#define CONFIG_ENV_IS_IN_NAND           
+	#define ONENAND_ENV_OFFSET              
+	#define SMNAND_ENV_OFFSET               
+    from include/configs/omap3_beagle.h
+
+  - Define the new set of configuration as below:
+    #define CONFIG_ENV_IS_IN_MMC    1
+    #define CONFIG_SYS_MMC_ENV_DEV  0
+    #define CONFIG_ENV_OFFSET       4096
+
+  - Now, re-compile the u-boot and savenv should save the environmental variables in MMC.
+
+14. Making a webcam work on the Beagle Board
+    ----------------------------------------
++ Here, the intention is to cross-compile the 'mjpg-streamer' for Beagle board. mjpg-streamer is an application  which captures the vidoe streams from the webcam and puts them on the http server. User can connect to the 
+  board and view the video streams. All the relevant sources are available are Templates/VideoApp. Below are 
+  the steps:
+
+  On Host
+  -------
+    - Untar the mjpg-streamer and get inside the directory.
+    - make clean and make
+    - mkdir -p ../mjpg-build
+    - make install DESTDIR=<path_to_mjpg-build>. This will give you the required files in the mjpg-build.
+    - tar -C <path_to_mjpg-build> -cvf build.tar .
+ 
+  On Board
+  --------
+    - Get the build.tar on the board and untar it. This will insert the necessary files into the directory.
+    - Get the libjpeg.so.8 from the server and put it in /lib.
+    - Execute 'export LD_LIBRARY_PATH=/lib/
+    - Get uvcvideo.ko from the server and do insmod uvcvideo.ko and this will give video7 device file
+    - Execute mjpg_streamer -i "input_uvc.so -d /dev/video7 -y" -o "output_http.so"
+    - Execute http://<ipaddress>:8080/?action=stream on browser and you should get the video stream.
+
+15. Modify the X-Loader to blink the LEDs on the Board
+    --------------------------------------------------
++ Relevant source files can be found at Templates/UBoot/XloaderMod. Below are the steps:
+   - Setup the pin multiplexing for GPIO1_21 in mux.c. For this, structure variable 'gpio_led_pin_mux' of 
+     type module_pin_mux is defined. This is used in enable_board_pin_mux.
+   - In common/spl/spl.c, add the function in board_init_r().
+   - Define 'blink_led' function in board/ti/am335x/board.c. 
+   - Add the function prototype in include/commons.h  
+   - Cross compile the code and load it through the serial.
+   - Pressing any key should toggle the LED.
+
+16. Minimizing the Kernel Size
+    --------------------------
++ The intention is to reduce the kernel size. Default Kernel has a size of 8.2MB. So, for minimizing the 
+  kernel  need to remove all the extra drivers and debug features available in the kernel. The configuration 
+  file for minimized kernel is located at Templates/Kernel/configs/config-min.
+ 
+    
+17. Booting the Kernel with Initramfs
+    ---------------------------------
++ The purpose of this hands-on is to make the Root Filesystem as a part of Kernel image. So, this will 
+  obliviate the need for any external Root Filesystem to boot the kernel. Such a root filesystem is known as
+  initramfs. All the relevant files can be found at Templates/Kernel.
++ Below are the steps for compiling the kernel with initramfs:
+  All the relevant sources can be found in Templates/Kernel directory. Kernel can be dowloaded from
+  ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-3.12.9.tar.gz. Below are the steps:
+  - untar the linux-3.12.9.tar.gz with  tar -zxvf linux-3.2.8.tgz. This will give you the directory linux-3.2.19.
+  - Go to the directory linux-3.12.9. Copy the patches folder from Templates/Kernel.
+  - To patch the kernel, execute the command 'quilt push -a'.
+  - This will apply the necessary patches
+  - Now, we want to configure the kernel, for this we will use the default configuration file provide in patch
+    folder with name 'beaglebone'. Copy this as .config file in linux-3.2.19 directory. Execute make ARCH=arm menuconfig
+  - Select the option 'General setup->Initramfs' source file and update it with absolute path of the root 
+    filesystem. exit the menuconfig. 
+  - Now, compile the kernel with make ARCH=arm CROSS_COMPILE=<toochain_prefix>-. This will give you vmlinux
+  - The vmlinux can't be understood by u-boot. So, for this, we need to wrap the kernel in such a way that
+    u-boot understands it. This is a two stage process. First convert the vmlinux into binary by using
+    the command 'arm-linux-objcopy -O binary vmlinux vmlinux.bin'
+  - Then convert the binary into the format understood by u-boot. For this, the utility called mkimage is
+    provided in u-boot/tools/. Below is the command:
+     mkimage -A arm -O linux -T kernel -C none -a 0x80008000 -e 0x80008000 -n linux-3.12.9 -d vmlinux.bin uImage
+  - This will give you uImage. Transfer the same to the board using any of the above method. 
+  - Environmental file for booting the kernel with Initramfs can be found at 
+    Templates/Kernel/Images/EnvInitRam.txt
+  

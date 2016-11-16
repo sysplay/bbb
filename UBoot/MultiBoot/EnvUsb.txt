@@ -1,0 +1,4 @@
+ramboot=setenv bootargs console=ttyO0,115200n8 root=/dev/ram0 rw ramdisk_size=16384 initrd=0x81000000,16M rootfstype=ext2
+uenvcmd=run ramboot;usb start; fatload usb 0 81000000 rd-ext2.bin; fatload usb 0 0x82000000; fatload usb 0 80200000 uImage; bootm 80200000 - 0x82000000;
+
+

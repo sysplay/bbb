@@ -189,6 +189,9 @@
 #endif
 
 #define CONFIG_BOOTCOMMAND \
+	"if userbutton; then " \
+	"setenv bootenv user.txt;" \
+	"fi;" \
 	"run findfdt; " \
 	"run mmcboot;" \
 	"setenv mmcdev 1; " \

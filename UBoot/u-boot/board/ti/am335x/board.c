@@ -82,6 +82,21 @@ static int read_eeprom(struct am335x_baseboard_id *header)
 	return 0;
 }
 
+int do_userbutton (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	int button = 0;
+	gpio_direction_input(72);
+	button = gpio_get_value(72);
+	return button;
+}
+
+U_BOOT_CMD(
+	userbutton, CONFIG_SYS_MAXARGS, 1,      do_userbutton,
+	"Return the status of the BeagleBoard USER button",
+	""
+);
+
+
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
 static const struct ddr_data ddr2_data = {
 	.datardsratio0 = MT47H128M16RT25E_RD_DQS,

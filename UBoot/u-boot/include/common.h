@@ -283,6 +283,7 @@ int	checkboard    (void);
 int	checkflash    (void);
 int	checkdram     (void);
 int	last_stage_init(void);
+int blink_led(void);
 extern ulong monitor_flash_len;
 int mac_read_from_eeprom(void);
 extern u8 __dtb_dt_begin[];	/* embedded device tree blob */

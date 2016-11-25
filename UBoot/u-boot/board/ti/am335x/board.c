@@ -229,6 +229,35 @@ const struct dpll_params *get_dpll_ddr_params(void)
 	return &dpll_ddr_bone_black;
 }
 
+int blink_led(void)
+{
+	char ch = 'n';
+
+	void *p;
+
+	/* Alternately turn the LEDs on and off */
+	p = (unsigned long *)0X4804C000;
+	*(unsigned long *)(p + 0x134) &= ~(1 << (53 % 32));
+	*(unsigned long *)(p + 0x134) &= ~(1 << (54 % 32));
+	*(unsigned long *)(p + 0x134) &= ~(1 << (55 % 32));
+
+	while (ch != 'x')
+	{
+
+		ch = getc();
+		printf("Welcome to Sysplay");
+		/* turn LED1 on and LED2 off */
+		*(unsigned long *)(p + 0x190) |= (1 << (54 % 32));
+		*(unsigned long *)(p + 0x194) |= (1 << (55 % 32));
+		/* delay for a while */
+		ch = getc();
+
+		/* turn LED1 off and LED2 on */
+		*(unsigned long *)(p + 0x194) |= (1 << (54 % 32));
+		*(unsigned long *)(p + 0x190) = (1 << (55 % 32));
+	}
+	return 0;
+}
 
 void set_uart_mux_conf(void)
 {

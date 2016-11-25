@@ -145,6 +145,8 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	 */
 	timer_init();
 
+	blink_led();
+
 #ifdef CONFIG_SPL_BOARD_INIT
 	spl_board_init();
 #endif

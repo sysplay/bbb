@@ -89,11 +89,11 @@ libs-$(CONFIG_SPL_NET_SUPPORT) += net/
 libs-$(CONFIG_SPL_ETH_SUPPORT) += drivers/net/
 libs-$(CONFIG_SPL_ETH_SUPPORT) += drivers/net/phy/
 libs-$(CONFIG_SPL_USBETH_SUPPORT) += drivers/net/phy/
-libs-$(CONFIG_SPL_MUSB_NEW_SUPPORT) += drivers/usb/musb-new/
-libs-$(CONFIG_SPL_USBETH_SUPPORT) += drivers/usb/gadget/
+#libs-$(CONFIG_SPL_MUSB_NEW_SUPPORT) += drivers/usb/musb-new/
+#libs-$(CONFIG_SPL_USBETH_SUPPORT) += drivers/usb/gadget/
 libs-$(CONFIG_SPL_WATCHDOG_SUPPORT) += drivers/watchdog/
-libs-$(CONFIG_SPL_USB_HOST_SUPPORT) += drivers/usb/host/
-libs-$(CONFIG_OMAP_USB_PHY) += drivers/usb/phy/
+#libs-$(CONFIG_SPL_USB_HOST_SUPPORT) += drivers/usb/host/
+#libs-$(CONFIG_OMAP_USB_PHY) += drivers/usb/phy/
 libs-$(CONFIG_SPL_SATA_SUPPORT) += drivers/block/
 
 ifneq (,$(CONFIG_MX23)$(CONFIG_MX35)$(filter $(SOC), mx25 mx27 mx5 mx6 mx31 mx35))

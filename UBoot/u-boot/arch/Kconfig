@@ -1,54 +1,9 @@
 choice
 	prompt "Architecture select"
-	default SANDBOX
-
-config ARC
-	bool "ARC architecture"
+	default ARM
 
 config ARM
 	bool "ARM architecture"
-	select SUPPORT_OF_CONTROL
-
-config AVR32
-	bool "AVR32 architecture"
-
-config BLACKFIN
-	bool "Blackfin architecture"
-
-config M68K
-	bool "M68000 architecture"
-
-config MICROBLAZE
-	bool "MicroBlaze architecture"
-	select SUPPORT_OF_CONTROL
-
-config MIPS
-	bool "MIPS architecture"
-
-config NDS32
-	bool "NDS32 architecture"
-
-config NIOS2
-	bool "Nios II architecture"
-
-config OPENRISC
-	bool "OpenRISC architecture"
-
-config PPC
-	bool "PowerPC architecture"
-
-config SANDBOX
-	bool "Sandbox"
-	select SUPPORT_OF_CONTROL
-
-config SH
-	bool "SuperH architecture"
-
-config SPARC
-	bool "SPARC architecture"
-
-config X86
-	bool "x86 architecture"
 	select SUPPORT_OF_CONTROL
 
 endchoice
@@ -109,18 +64,4 @@ config SYS_CONFIG_NAME
 	  The header file include/configs/<CONFIG_SYS_CONFIG_NAME>.h
 	  should be included from include/config.h.
 
-source "arch/arc/Kconfig"
 source "arch/arm/Kconfig"
-source "arch/avr32/Kconfig"
-source "arch/blackfin/Kconfig"
-source "arch/m68k/Kconfig"
-source "arch/microblaze/Kconfig"
-source "arch/mips/Kconfig"
-source "arch/nds32/Kconfig"
-source "arch/nios2/Kconfig"
-source "arch/openrisc/Kconfig"
-source "arch/powerpc/Kconfig"
-source "arch/sandbox/Kconfig"
-source "arch/sh/Kconfig"
-source "arch/sparc/Kconfig"
-source "arch/x86/Kconfig"

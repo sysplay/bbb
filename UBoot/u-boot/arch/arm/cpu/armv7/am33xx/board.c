@@ -217,14 +217,6 @@ static void watchdog_disable(void)
 void s_init(void)
 {
 	/*
-	 * The ROM will only have set up sufficient pinmux to allow for the
-	 * first 4KiB NOR to be read, we must finish doing what we know of
-	 * the NOR mux in this space in order to continue.
-	 */
-#ifdef CONFIG_NOR_BOOT
-	enable_norboot_pin_mux();
-#endif
-	/*
 	 * Save the boot parameters passed from romcode.
 	 * We cannot delay the saving further than this,
 	 * to prevent overwrites.
@@ -237,14 +229,8 @@ void s_init(void)
 	set_uart_mux_conf();
 	setup_clocks_for_console();
 	uart_soft_reset();
-#if defined(CONFIG_NOR_BOOT) || defined(CONFIG_QSPI_BOOT)
-	gd->baudrate = CONFIG_BAUDRATE;
-	serial_init();
-	gd->have_console = 1;
-#elif defined(CONFIG_SPL_BUILD)
 	gd = &gdata;
 	preloader_console_init();
-#endif
 #if defined(CONFIG_SPL_AM33XX_ENABLE_RTC32K_OSC)
 	/* Enable RTC32K clock */
 	rtc32k_enable();

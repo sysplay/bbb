@@ -27,7 +27,6 @@
 #include <miiphy.h>
 #include <cpsw.h>
 #include <power/tps65217.h>
-#include <power/tps65910.h>
 #include <environment.h>
 #include <watchdog.h>
 #include <environment.h>
@@ -82,7 +81,7 @@ static int read_eeprom(struct am335x_baseboard_id *header)
 	return 0;
 }
 
-int do_userbutton (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_userbutton (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int button = 0;
 	gpio_direction_input(72);
@@ -98,35 +97,6 @@ U_BOOT_CMD(
 
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
-static const struct ddr_data ddr2_data = {
-	.datardsratio0 = MT47H128M16RT25E_RD_DQS,
-	.datafwsratio0 = MT47H128M16RT25E_PHY_FIFO_WE,
-	.datawrsratio0 = MT47H128M16RT25E_PHY_WR_DATA,
-};
-
-static const struct cmd_control ddr2_cmd_ctrl_data = {
-	.cmd0csratio = MT47H128M16RT25E_RATIO,
-
-	.cmd1csratio = MT47H128M16RT25E_RATIO,
-
-	.cmd2csratio = MT47H128M16RT25E_RATIO,
-};
-
-static const struct emif_regs ddr2_emif_reg_data = {
-	.sdram_config = MT47H128M16RT25E_EMIF_SDCFG,
-	.ref_ctrl = MT47H128M16RT25E_EMIF_SDREF,
-	.sdram_tim1 = MT47H128M16RT25E_EMIF_TIM1,
-	.sdram_tim2 = MT47H128M16RT25E_EMIF_TIM2,
-	.sdram_tim3 = MT47H128M16RT25E_EMIF_TIM3,
-	.emif_ddr_phy_ctlr_1 = MT47H128M16RT25E_EMIF_READ_LATENCY,
-};
-
-static const struct ddr_data ddr3_data = {
-	.datardsratio0 = MT41J128MJT125_RD_DQS,
-	.datawdsratio0 = MT41J128MJT125_WR_DQS,
-	.datafwsratio0 = MT41J128MJT125_PHY_FIFO_WE,
-	.datawrsratio0 = MT41J128MJT125_PHY_WR_DATA,
-};
 
 static const struct ddr_data ddr3_beagleblack_data = {
 	.datardsratio0 = MT41K256M16HA125E_RD_DQS,
@@ -135,23 +105,6 @@ static const struct ddr_data ddr3_beagleblack_data = {
 	.datawrsratio0 = MT41K256M16HA125E_PHY_WR_DATA,
 };
 
-static const struct ddr_data ddr3_evm_data = {
-	.datardsratio0 = MT41J512M8RH125_RD_DQS,
-	.datawdsratio0 = MT41J512M8RH125_WR_DQS,
-	.datafwsratio0 = MT41J512M8RH125_PHY_FIFO_WE,
-	.datawrsratio0 = MT41J512M8RH125_PHY_WR_DATA,
-};
-
-static const struct cmd_control ddr3_cmd_ctrl_data = {
-	.cmd0csratio = MT41J128MJT125_RATIO,
-	.cmd0iclkout = MT41J128MJT125_INVERT_CLKOUT,
-
-	.cmd1csratio = MT41J128MJT125_RATIO,
-	.cmd1iclkout = MT41J128MJT125_INVERT_CLKOUT,
-
-	.cmd2csratio = MT41J128MJT125_RATIO,
-	.cmd2iclkout = MT41J128MJT125_INVERT_CLKOUT,
-};
 
 static const struct cmd_control ddr3_beagleblack_cmd_ctrl_data = {
 	.cmd0csratio = MT41K256M16HA125E_RATIO,
@@ -164,27 +117,6 @@ static const struct cmd_control ddr3_beagleblack_cmd_ctrl_data = {
 	.cmd2iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
 };
 
-static const struct cmd_control ddr3_evm_cmd_ctrl_data = {
-	.cmd0csratio = MT41J512M8RH125_RATIO,
-	.cmd0iclkout = MT41J512M8RH125_INVERT_CLKOUT,
-
-	.cmd1csratio = MT41J512M8RH125_RATIO,
-	.cmd1iclkout = MT41J512M8RH125_INVERT_CLKOUT,
-
-	.cmd2csratio = MT41J512M8RH125_RATIO,
-	.cmd2iclkout = MT41J512M8RH125_INVERT_CLKOUT,
-};
-
-static struct emif_regs ddr3_emif_reg_data = {
-	.sdram_config = MT41J128MJT125_EMIF_SDCFG,
-	.ref_ctrl = MT41J128MJT125_EMIF_SDREF,
-	.sdram_tim1 = MT41J128MJT125_EMIF_TIM1,
-	.sdram_tim2 = MT41J128MJT125_EMIF_TIM2,
-	.sdram_tim3 = MT41J128MJT125_EMIF_TIM3,
-	.zq_config = MT41J128MJT125_ZQ_CFG,
-	.emif_ddr_phy_ctlr_1 = MT41J128MJT125_EMIF_READ_LATENCY |
-				PHY_EN_DYN_PWRDN,
-};
 
 static struct emif_regs ddr3_beagleblack_emif_reg_data = {
 	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
@@ -194,19 +126,9 @@ static struct emif_regs ddr3_beagleblack_emif_reg_data = {
 	.sdram_tim3 = MT41K256M16HA125E_EMIF_TIM3,
 	.zq_config = MT41K256M16HA125E_ZQ_CFG,
 	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
-};
+	};
 
-static struct emif_regs ddr3_evm_emif_reg_data = {
-	.sdram_config = MT41J512M8RH125_EMIF_SDCFG,
-	.ref_ctrl = MT41J512M8RH125_EMIF_SDREF,
-	.sdram_tim1 = MT41J512M8RH125_EMIF_TIM1,
-	.sdram_tim2 = MT41J512M8RH125_EMIF_TIM2,
-	.sdram_tim3 = MT41J512M8RH125_EMIF_TIM3,
-	.zq_config = MT41J512M8RH125_ZQ_CFG,
-	.emif_ddr_phy_ctlr_1 = MT41J512M8RH125_EMIF_READ_LATENCY |
-				PHY_EN_DYN_PWRDN,
-};
-
+	
 #ifdef CONFIG_SPL_OS_BOOT
 int spl_start_uboot(void)
 {
@@ -235,166 +157,78 @@ const struct dpll_params dpll_ddr_bone_black = {
 
 void am33xx_spl_board_init(void)
 {
-	struct am335x_baseboard_id header;
 	int mpu_vdd;
-
-	if (read_eeprom(&header) < 0)
-		puts("Could not get board ID.\n");
 
 	/* Get the frequency */
 	dpll_mpu_opp100.m = am335x_get_efuse_mpu_max_freq(cdev);
 
-	if (board_is_bone(&header) || board_is_bone_lt(&header)) {
-		/* BeagleBone PMIC Code */
-		int usb_cur_lim;
+	/* BeagleBone PMIC Code */
+	int usb_cur_lim;
 
-		/*
-		 * Only perform PMIC configurations if board rev > A1
-		 * on Beaglebone White
-		 */
-		if (board_is_bone(&header) && !strncmp(header.version,
-						       "00A1", 4))
-			return;
 
-		if (i2c_probe(TPS65217_CHIP_PM))
-			return;
+	if (i2c_probe(TPS65217_CHIP_PM))
+		return;
+	/*
+	 * Override what we have detected since we know if we have
+	 * a Beaglebone Black it supports 1GHz.
+	 */
+	dpll_mpu_opp100.m = MPUPLL_M_1000;
 
-		/*
-		 * On Beaglebone White we need to ensure we have AC power
-		 * before increasing the frequency.
-		 */
-		if (board_is_bone(&header)) {
-			uchar pmic_status_reg;
-			if (tps65217_reg_read(TPS65217_STATUS,
-					      &pmic_status_reg))
-				return;
-			if (!(pmic_status_reg & TPS65217_PWR_SRC_AC_BITMASK)) {
-				puts("No AC power, disabling frequency switch\n");
-				return;
-			}
-		}
+	/*
+	 * Increase USB current limit to 1300mA or 1800mA and set
+	 * the MPU voltage controller as needed.
+	 */
+	usb_cur_lim = TPS65217_USB_INPUT_CUR_LIMIT_1800MA;
+	mpu_vdd = TPS65217_DCDC_VOLT_SEL_1325MV;
 
-		/*
-		 * Override what we have detected since we know if we have
-		 * a Beaglebone Black it supports 1GHz.
-		 */
-		if (board_is_bone_lt(&header))
-			dpll_mpu_opp100.m = MPUPLL_M_1000;
+	if (tps65217_reg_write(TPS65217_PROT_LEVEL_NONE,
+				TPS65217_POWER_PATH,
+				usb_cur_lim,
+				TPS65217_USB_INPUT_CUR_LIMIT_MASK))
+		puts("tps65217_reg_write failure\n");
 
-		/*
-		 * Increase USB current limit to 1300mA or 1800mA and set
-		 * the MPU voltage controller as needed.
-		 */
-		if (dpll_mpu_opp100.m == MPUPLL_M_1000) {
-			usb_cur_lim = TPS65217_USB_INPUT_CUR_LIMIT_1800MA;
-			mpu_vdd = TPS65217_DCDC_VOLT_SEL_1325MV;
-		} else {
-			usb_cur_lim = TPS65217_USB_INPUT_CUR_LIMIT_1300MA;
-			mpu_vdd = TPS65217_DCDC_VOLT_SEL_1275MV;
-		}
-
-		if (tps65217_reg_write(TPS65217_PROT_LEVEL_NONE,
-				       TPS65217_POWER_PATH,
-				       usb_cur_lim,
-				       TPS65217_USB_INPUT_CUR_LIMIT_MASK))
-			puts("tps65217_reg_write failure\n");
-
-		/* Set DCDC3 (CORE) voltage to 1.125V */
-		if (tps65217_voltage_update(TPS65217_DEFDCDC3,
-					    TPS65217_DCDC_VOLT_SEL_1125MV)) {
-			puts("tps65217_voltage_update failure\n");
-			return;
-		}
-
-		/* Set CORE Frequencies to OPP100 */
-		do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
-
-		/* Set DCDC2 (MPU) voltage */
-		if (tps65217_voltage_update(TPS65217_DEFDCDC2, mpu_vdd)) {
-			puts("tps65217_voltage_update failure\n");
-			return;
-		}
-
-		/*
-		 * Set LDO3, LDO4 output voltage to 3.3V for Beaglebone.
-		 * Set LDO3 to 1.8V and LDO4 to 3.3V for Beaglebone Black.
-		 */
-		if (board_is_bone(&header)) {
-			if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
-					       TPS65217_DEFLS1,
-					       TPS65217_LDO_VOLTAGE_OUT_3_3,
-					       TPS65217_LDO_MASK))
-				puts("tps65217_reg_write failure\n");
-		} else {
-			if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
-					       TPS65217_DEFLS1,
-					       TPS65217_LDO_VOLTAGE_OUT_1_8,
-					       TPS65217_LDO_MASK))
-				puts("tps65217_reg_write failure\n");
-		}
-
-		if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
-				       TPS65217_DEFLS2,
-				       TPS65217_LDO_VOLTAGE_OUT_3_3,
-				       TPS65217_LDO_MASK))
-			puts("tps65217_reg_write failure\n");
-	} else {
-		int sil_rev;
-
-		/*
-		 * The GP EVM, IDK and EVM SK use a TPS65910 PMIC.  For all
-		 * MPU frequencies we support we use a CORE voltage of
-		 * 1.1375V.  For MPU voltage we need to switch based on
-		 * the frequency we are running at.
-		 */
-		if (i2c_probe(TPS65910_CTRL_I2C_ADDR))
-			return;
-
-		/*
-		 * Depending on MPU clock and PG we will need a different
-		 * VDD to drive at that speed.
-		 */
-		sil_rev = readl(&cdev->deviceid) >> 28;
-		mpu_vdd = am335x_get_tps65910_mpu_vdd(sil_rev,
-						      dpll_mpu_opp100.m);
-
-		/* Tell the TPS65910 to use i2c */
-		tps65910_set_i2c_control();
-
-		/* First update MPU voltage. */
-		if (tps65910_voltage_update(MPU, mpu_vdd))
-			return;
-
-		/* Second, update the CORE voltage. */
-		if (tps65910_voltage_update(CORE, TPS65910_OP_REG_SEL_1_1_3))
-			return;
-
-		/* Set CORE Frequencies to OPP100 */
-		do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
+	/* Set DCDC3 (CORE) voltage to 1.125V */
+	if (tps65217_voltage_update(TPS65217_DEFDCDC3,
+				TPS65217_DCDC_VOLT_SEL_1125MV)) {
+		puts("tps65217_voltage_update failure\n");
+		return;
 	}
 
+	/* Set CORE Frequencies to OPP100 */
+	do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
+
+	/* Set DCDC2 (MPU) voltage */
+	if (tps65217_voltage_update(TPS65217_DEFDCDC2, mpu_vdd)) {
+		puts("tps65217_voltage_update failure\n");
+		return;
+	}
+
+	/*
+	 * Set LDO3 to 1.8V and LDO4 to 3.3V for Beaglebone Black.
+	 */
+	if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
+				TPS65217_DEFLS1,
+				TPS65217_LDO_VOLTAGE_OUT_1_8,
+				TPS65217_LDO_MASK))
+		puts("tps65217_reg_write failure\n");
+
+	if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
+				TPS65217_DEFLS2,
+				TPS65217_LDO_VOLTAGE_OUT_3_3,
+				TPS65217_LDO_MASK))
+		puts("tps65217_reg_write failure\n");
 	/* Set MPU Frequency to what we detected now that voltages are set */
 	do_setup_dpll(&dpll_mpu_regs, &dpll_mpu_opp100);
 }
 
 const struct dpll_params *get_dpll_ddr_params(void)
 {
-	struct am335x_baseboard_id header;
-
 	enable_i2c0_pin_mux();
 	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
-	if (read_eeprom(&header) < 0)
-		puts("Could not get board ID.\n");
 
-	if (board_is_evm_sk(&header))
-		return &dpll_ddr_evm_sk;
-	else if (board_is_bone_lt(&header))
-		return &dpll_ddr_bone_black;
-	else if (board_is_evm_15_or_later(&header))
-		return &dpll_ddr_evm_sk;
-	else
-		return &dpll_ddr;
+	return &dpll_ddr_bone_black;
 }
+
 
 void set_uart_mux_conf(void)
 {
@@ -415,12 +249,7 @@ void set_uart_mux_conf(void)
 
 void set_mux_conf_regs(void)
 {
-	__maybe_unused struct am335x_baseboard_id header;
-
-	if (read_eeprom(&header) < 0)
-		puts("Could not get board ID.\n");
-
-	enable_board_pin_mux(&header);
+	enable_board_pin_mux();
 }
 
 const struct ctrl_ioregs ioregs_evmsk = {
@@ -457,34 +286,10 @@ const struct ctrl_ioregs ioregs = {
 
 void sdram_init(void)
 {
-	__maybe_unused struct am335x_baseboard_id header;
-
-	if (read_eeprom(&header) < 0)
-		puts("Could not get board ID.\n");
-
-	if (board_is_evm_sk(&header)) {
-		/*
-		 * EVM SK 1.2A and later use gpio0_7 to enable DDR3.
-		 * This is safe enough to do on older revs.
-		 */
-		gpio_request(GPIO_DDR_VTT_EN, "ddr_vtt_en");
-		gpio_direction_output(GPIO_DDR_VTT_EN, 1);
-	}
-
-	if (board_is_evm_sk(&header))
-		config_ddr(303, &ioregs_evmsk, &ddr3_data,
-			   &ddr3_cmd_ctrl_data, &ddr3_emif_reg_data, 0);
-	else if (board_is_bone_lt(&header))
-		config_ddr(400, &ioregs_bonelt,
-			   &ddr3_beagleblack_data,
-			   &ddr3_beagleblack_cmd_ctrl_data,
-			   &ddr3_beagleblack_emif_reg_data, 0);
-	else if (board_is_evm_15_or_later(&header))
-		config_ddr(303, &ioregs_evm15, &ddr3_evm_data,
-			   &ddr3_evm_cmd_ctrl_data, &ddr3_evm_emif_reg_data, 0);
-	else
-		config_ddr(266, &ioregs, &ddr2_data,
-			   &ddr2_cmd_ctrl_data, &ddr2_emif_reg_data, 0);
+	config_ddr(400, &ioregs_bonelt,
+			&ddr3_beagleblack_data,
+			&ddr3_beagleblack_cmd_ctrl_data,
+			&ddr3_beagleblack_emif_reg_data, 0);
 }
 #endif
 
@@ -498,9 +303,6 @@ int board_init(void)
 #endif
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
-#if defined(CONFIG_NOR) || defined(CONFIG_NAND)
-	gpmc_init();
-#endif
 	return 0;
 }
 

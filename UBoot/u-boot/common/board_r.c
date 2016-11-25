@@ -691,9 +691,6 @@ static int initr_kbd(void)
 
 static int run_main_loop(void)
 {
-#ifdef CONFIG_SANDBOX
-	sandbox_main_loop_init();
-#endif
 	/* main_loop() can return to retry autoboot, if so just run it again */
 	for (;;)
 		main_loop();
@@ -717,144 +714,36 @@ init_fnc_t init_sequence_r[] = {
 	initr_caches,
 #endif
 	initr_reloc_global_data,
-#if defined(CONFIG_SYS_INIT_RAM_LOCK) && defined(CONFIG_E500)
-	initr_unlock_ram_in_cache,
-#endif
 	initr_barrier,
 	initr_malloc,
 	bootstage_relocate,
-#ifdef CONFIG_DM
-	initr_dm,
-#endif
 #ifdef CONFIG_ARM
 	board_init,	/* Setup chipselects */
-#endif
-	/*
-	 * TODO: printing of the clock inforamtion of the board is now
-	 * implemented as part of bdinfo command. Currently only support for
-	 * davinci SOC's is added. Remove this check once all the board
-	 * implement this.
-	 */
-#ifdef CONFIG_CLOCKS
-	set_cpu_clk_info, /* Setup clock information */
 #endif
 	stdio_init_tables,
 	initr_serial,
 	initr_announce,
 	INIT_FUNC_WATCHDOG_RESET
-#ifdef CONFIG_PPC
-	initr_trap,
-#endif
-#ifdef CONFIG_ADDR_MAP
-	initr_addr_map,
-#endif
-#if defined(CONFIG_BOARD_EARLY_INIT_R)
-	board_early_init_r,
-#endif
-	INIT_FUNC_WATCHDOG_RESET
-#ifdef CONFIG_LOGBUFFER
-	initr_logbuffer,
-#endif
-#ifdef CONFIG_POST
-	initr_post_backlog,
-#endif
-	INIT_FUNC_WATCHDOG_RESET
-#ifdef CONFIG_SYS_DELAYED_ICACHE
-	initr_icache_enable,
-#endif
-#if defined(CONFIG_PCI) && defined(CONFIG_SYS_EARLY_PCI_INIT)
-	/*
-	 * Do early PCI configuration _before_ the flash gets initialised,
-	 * because PCU ressources are crucial for flash access on some boards.
-	 */
-	initr_pci,
-#endif
-#ifdef CONFIG_WINBOND_83C553
-	initr_w83c553f,
-#endif
-#ifdef CONFIG_ARCH_EARLY_INIT_R
-	arch_early_init_r,
-#endif
-	power_init_board,
-#ifndef CONFIG_SYS_NO_FLASH
-	initr_flash,
-#endif
-	INIT_FUNC_WATCHDOG_RESET
-#if defined(CONFIG_PPC) || defined(CONFIG_X86)
-	/* initialize higher level parts of CPU like time base and timers */
-	cpu_init_r,
-#endif
-#ifdef CONFIG_PPC
-	initr_spi,
-#endif
-#if defined(CONFIG_X86) && defined(CONFIG_SPI)
-	init_func_spi,
-#endif
-#ifdef CONFIG_CMD_NAND
-	initr_nand,
-#endif
-#ifdef CONFIG_CMD_ONENAND
-	initr_onenand,
-#endif
 #ifdef CONFIG_GENERIC_MMC
 	initr_mmc,
-#endif
-#ifdef CONFIG_HAS_DATAFLASH
-	initr_dataflash,
 #endif
 	initr_env,
 	INIT_FUNC_WATCHDOG_RESET
 	initr_secondary_cpu,
-#ifdef CONFIG_SC3
-	initr_sc3_read_eeprom,
-#endif
-#ifdef	CONFIG_HERMES
-	initr_hermes,
-#endif
-#if defined(CONFIG_ID_EEPROM) || defined(CONFIG_SYS_I2C_MAC_OFFSET)
-	mac_read_from_eeprom,
-#endif
 	INIT_FUNC_WATCHDOG_RESET
-#if defined(CONFIG_PCI) && !defined(CONFIG_SYS_EARLY_PCI_INIT)
-	/*
-	 * Do pci configuration
-	 */
-	initr_pci,
-#endif
 	stdio_add_devices,
 	initr_jumptable,
-#ifdef CONFIG_API
-	initr_api,
-#endif
 	console_init_r,		/* fully init console as a device */
-#ifdef CONFIG_DISPLAY_BOARDINFO_LATE
-	show_model_r,
-#endif
 #ifdef CONFIG_ARCH_MISC_INIT
 	arch_misc_init,		/* miscellaneous arch-dependent init */
 #endif
 #ifdef CONFIG_MISC_INIT_R
 	misc_init_r,		/* miscellaneous platform-dependent init */
 #endif
-#ifdef CONFIG_HERMES
-	initr_hermes_start,
-#endif
 	INIT_FUNC_WATCHDOG_RESET
-#ifdef CONFIG_CMD_KGDB
-	initr_kgdb,
-#endif
-#ifdef CONFIG_X86
-	board_early_init_r,
-#endif
 	interrupt_init,
 #if defined(CONFIG_ARM) || defined(CONFIG_x86)
 	initr_enable_interrupts,
-#endif
-#ifdef CONFIG_X86
-	timer_init,		/* initialize timer */
-#endif
-#if defined(CONFIG_STATUS_LED) && defined(STATUS_LED_BOOT)
-	initr_status_led,
 #endif
 	/* PPC has a udelay(20) here dating from 2002. Why? */
 #ifdef CONFIG_CMD_NET
@@ -863,67 +752,15 @@ init_fnc_t init_sequence_r[] = {
 #ifdef CONFIG_BOARD_LATE_INIT
 	board_late_init,
 #endif
-#ifdef CONFIG_CMD_SCSI
-	INIT_FUNC_WATCHDOG_RESET
-	initr_scsi,
-#endif
-#ifdef CONFIG_CMD_DOC
-	INIT_FUNC_WATCHDOG_RESET
-	initr_doc,
-#endif
-#ifdef CONFIG_BITBANGMII
-	initr_bbmii,
-#endif
 #ifdef CONFIG_CMD_NET
 	INIT_FUNC_WATCHDOG_RESET
 	initr_net,
-#endif
-#ifdef CONFIG_POST
-	initr_post,
-#endif
-#if defined(CONFIG_CMD_PCMCIA) && !defined(CONFIG_CMD_IDE)
-	initr_pcmcia,
-#endif
-#if defined(CONFIG_CMD_IDE)
-	initr_ide,
-#endif
-#ifdef CONFIG_LAST_STAGE_INIT
-	INIT_FUNC_WATCHDOG_RESET
-	/*
-	 * Some parts can be only initialized if all others (like
-	 * Interrupts) are up and running (i.e. the PC-style ISA
-	 * keyboard).
-	 */
-	last_stage_init,
-#endif
-#ifdef CONFIG_CMD_BEDBUG
-	INIT_FUNC_WATCHDOG_RESET
-	initr_bedbug,
-#endif
-#if defined(CONFIG_PRAM) || defined(CONFIG_LOGBUFFER)
-	initr_mem,
-#endif
-#ifdef CONFIG_PS2KBD
-	initr_kbd,
 #endif
 	run_main_loop,
 };
 
 void board_init_r(gd_t *new_gd, ulong dest_addr)
 {
-#ifdef CONFIG_NEEDS_MANUAL_RELOC
-	int i;
-#endif
-
-#if !defined(CONFIG_X86) && !defined(CONFIG_ARM) && !defined(CONFIG_ARM64)
-	gd = new_gd;
-#endif
-
-#ifdef CONFIG_NEEDS_MANUAL_RELOC
-	for (i = 0; i < ARRAY_SIZE(init_sequence_r); i++)
-		init_sequence_r[i] += gd->reloc_off;
-#endif
-
 	if (initcall_run_list(init_sequence_r))
 		hang();
 

@@ -139,13 +139,11 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 			CONFIG_SYS_SPL_MALLOC_SIZE);
 #endif
 
-#ifndef CONFIG_PPC
 	/*
 	 * timer_init() does not exist on PPC systems. The timer is initialized
 	 * and enabled (decrementer) in interrupt_init() here.
 	 */
 	timer_init();
-#endif
 
 #ifdef CONFIG_SPL_BOARD_INIT
 	spl_board_init();
@@ -154,11 +152,6 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	boot_device = spl_boot_device();
 	debug("boot device - %d\n", boot_device);
 	switch (boot_device) {
-#ifdef CONFIG_SPL_RAM_DEVICE
-	case BOOT_DEVICE_RAM:
-		spl_ram_load_image();
-		break;
-#endif
 #ifdef CONFIG_SPL_MMC_SUPPORT
 	case BOOT_DEVICE_MMC1:
 	case BOOT_DEVICE_MMC2:
@@ -166,29 +159,9 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		spl_mmc_load_image();
 		break;
 #endif
-#ifdef CONFIG_SPL_NAND_SUPPORT
-	case BOOT_DEVICE_NAND:
-		spl_nand_load_image();
-		break;
-#endif
-#ifdef CONFIG_SPL_ONENAND_SUPPORT
-	case BOOT_DEVICE_ONENAND:
-		spl_onenand_load_image();
-		break;
-#endif
-#ifdef CONFIG_SPL_NOR_SUPPORT
-	case BOOT_DEVICE_NOR:
-		spl_nor_load_image();
-		break;
-#endif
 #ifdef CONFIG_SPL_YMODEM_SUPPORT
 	case BOOT_DEVICE_UART:
 		spl_ymodem_load_image();
-		break;
-#endif
-#ifdef CONFIG_SPL_SPI_SUPPORT
-	case BOOT_DEVICE_SPI:
-		spl_spi_load_image();
 		break;
 #endif
 #ifdef CONFIG_SPL_ETH_SUPPORT

@@ -93,9 +93,7 @@ u32 spl_boot_mode(void)
 
 void spl_board_init(void)
 {
-#ifdef CONFIG_SPL_NAND_SUPPORT
-	gpmc_init();
-#endif
+
 #if defined(CONFIG_AM33XX) && defined(CONFIG_SPL_MUSB_NEW_SUPPORT)
 	arch_misc_init();
 #endif

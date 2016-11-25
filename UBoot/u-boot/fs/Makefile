@@ -11,14 +11,6 @@ obj-$(CONFIG_SPL_FAT_SUPPORT) += fat/
 else
 obj-y				+= fs.o
 
-obj-$(CONFIG_CMD_CBFS) += cbfs/
-obj-$(CONFIG_CMD_CRAMFS) += cramfs/
 obj-$(CONFIG_FS_EXT4) += ext4/
 obj-y += fat/
-obj-$(CONFIG_CMD_JFFS2) += jffs2/
-obj-$(CONFIG_CMD_REISER) += reiserfs/
-obj-$(CONFIG_SANDBOX) += sandbox/
-obj-$(CONFIG_CMD_UBIFS) += ubifs/
-obj-$(CONFIG_YAFFS2) += yaffs2/
-obj-$(CONFIG_CMD_ZFS) += zfs/
 endif

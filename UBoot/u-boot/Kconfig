@@ -106,8 +106,6 @@ source "arch/Kconfig"
 
 source "common/Kconfig"
 
-source "dts/Kconfig"
-
 source "net/Kconfig"
 
 source "drivers/Kconfig"

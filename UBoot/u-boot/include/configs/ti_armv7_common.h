@@ -96,11 +96,6 @@
 #define CONFIG_OMAP_HSMMC
 #define CONFIG_CMD_MMC
 
-/* McSPI IP block */
-#define CONFIG_SPI
-#define CONFIG_OMAP3_SPI
-#define CONFIG_CMD_SPI
-
 /* GPIO block */
 #define CONFIG_OMAP_GPIO
 #define CONFIG_CMD_GPIO

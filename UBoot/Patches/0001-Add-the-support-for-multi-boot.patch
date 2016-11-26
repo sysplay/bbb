@@ -1,0 +1,72 @@
+From e4f0e006986c6f66f21fe6822cdcfe9044d5e664 Mon Sep 17 00:00:00 2001
+From: Pradeep Tewani <pradeep@sysplay.in>
+Date: Fri, 25 Nov 2016 18:58:39 +0530
+Subject: [PATCH] Add the support for multi-boot
+
+---
+ UBoot/u-boot/common/autoboot.c |   42 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+diff --git a/UBoot/u-boot/common/autoboot.c b/UBoot/u-boot/common/autoboot.c
+index c27cc2c..56f82d4 100644
+--- a/UBoot/u-boot/common/autoboot.c
++++ b/UBoot/u-boot/common/autoboot.c
+@@ -226,6 +226,41 @@ static void process_fdt_options(const void *blob)
+ #endif /* CONFIG_OF_CONTROL */
+ }
+ 
++int multiboot(void)
++{
++	unsigned char choice;
++	char *envs[] = {"EnvMmc.txt", "EnvUsb.txt", "EnvRam.txt", "EnvNfs.txt", "EnvConsole.txt"};
++
++	do
++	{
++		printf("\n\n1: Boot From MMC\n");
++		printf("2: Boot From Usb\n");
++		printf("3: Boot Using Ram Disk\n");
++		printf("4: Boot Using Nfs\n");
++		printf("5: Boot the console Image\n");
++		printf("0: Stay in Boot Mode\n");
++		printf("\nEnter Your Choice: \n");
++		choice = getc();
++		choice -= '0';
++
++		if (choice < 0 || choice > 5)
++		{
++			printf("Wrong Choice\n");
++			continue;
++		}
++		if (choice != 0)
++		{
++			setenv("bootenv", envs[choice - 1]);
++			return 1;
++		}
++		return 0;
++
++	} while(1);
++
++	return 0;
++}
++
++
+ const char *bootdelay_process(void)
+ {
+ 	char *s;
+@@ -294,6 +329,13 @@ void autoboot_command(const char *s)
+ #endif
+ 	}
+ 
++	if(multiboot())
++	{
++		s = getenv ("bootcmd");
++		run_command_list(s, -1, 0);
++	}
++
++
+ #ifdef CONFIG_MENUKEY
+ 	if (menukey == CONFIG_MENUKEY) {
+ 		s = getenv("menucmd");
+-- 
+1.7.10
+

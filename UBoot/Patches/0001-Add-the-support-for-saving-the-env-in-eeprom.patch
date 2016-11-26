@@ -1,0 +1,67 @@
+From 185fa71f060ae1bee086c9825dd0c4862564ce60 Mon Sep 17 00:00:00 2001
+From: Pradeep Tewani <pradeep@sysplay.in>
+Date: Fri, 25 Nov 2016 19:42:32 +0530
+Subject: [PATCH] Add the support for saving the env in eeprom
+
+---
+ UBoot/u-boot/include/configs/am335x_evm.h |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/UBoot/u-boot/include/configs/am335x_evm.h b/UBoot/u-boot/include/configs/am335x_evm.h
+index fef59ea..32f9276 100644
+--- a/UBoot/u-boot/include/configs/am335x_evm.h
++++ b/UBoot/u-boot/include/configs/am335x_evm.h
+@@ -42,7 +42,7 @@
+ #define CONFIG_SYS_LDSCRIPT		"board/ti/am335x/u-boot.lds"
+ 
+ /* Always 128 KiB env size */
+-#define CONFIG_ENV_SIZE			(128 << 10)
++#define CONFIG_ENV_SIZE			(3 << 10)
+ 
+ /* Enhance our eMMC support / experience. */
+ #define CONFIG_CMD_GPT
+@@ -71,6 +71,7 @@
+ 
+ #define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+ 
++#if 0
+ #ifndef CONFIG_SPL_BUILD
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 	DEFAULT_LINUX_BOOT_ENV \
+@@ -186,6 +187,7 @@
+ 			"echo WARNING: Could not determine device tree to use; fi; \0" \
+ 	NANDARGS 
+ #endif
++#endif
+ 
+ #define CONFIG_BOOTCOMMAND \
+ 	"if userbutton; then " \
+@@ -207,11 +209,18 @@
+ #define CONFIG_SYS_NS16550_COM6		0x481aa000	/* UART5 */
+ #define CONFIG_BAUDRATE			115200
+ 
++#undef CONFIG_ENV_IS_NOWHERE
++#define CONFIG_ENV_IS_IN_EEPROM
+ #define CONFIG_CMD_EEPROM
+ #define CONFIG_ENV_EEPROM_IS_ON_I2C
+ #define CONFIG_SYS_I2C_EEPROM_ADDR	0x50	/* Main EEPROM */
++#define CONFIG_SYS_DEF_EEPROM_ADDR	0x50
+ #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	2
+ #define CONFIG_SYS_I2C_MULTI_EEPROMS
++#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS 10
++#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	5
++#define CONFIG_ENV_OFFSET	0x50
++#define CONFIG_CMD_SAVEENV
+ 
+ /* PMIC support */
+ #define CONFIG_POWER_TPS65217
+@@ -270,6 +279,5 @@
+ #define CONFIG_PHY_SMSC
+ 
+ 
+-#define CONFIG_ENV_IS_NOWHERE
+ 
+ #endif	/* ! __CONFIG_AM335X_EVM_H */
+-- 
+1.7.10
+

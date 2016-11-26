@@ -1,0 +1,53 @@
+From 6ac3883c916a24cb184721ca9e943e6c31a7cc34 Mon Sep 17 00:00:00 2001
+From: Pradeep Tewani <pradeep@sysplay.in>
+Date: Fri, 25 Nov 2016 17:41:42 +0530
+Subject: [PATCH] Added the support for userbutton in u-boot
+
+---
+ UBoot/u-boot/board/ti/am335x/board.c      |   15 +++++++++++++++
+ UBoot/u-boot/include/configs/am335x_evm.h |    3 +++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/UBoot/u-boot/board/ti/am335x/board.c b/UBoot/u-boot/board/ti/am335x/board.c
+index 0739e60..3d748d1 100644
+--- a/UBoot/u-boot/board/ti/am335x/board.c
++++ b/UBoot/u-boot/board/ti/am335x/board.c
+@@ -82,6 +82,21 @@ static int read_eeprom(struct am335x_baseboard_id *header)
+ 	return 0;
+ }
+ 
++int do_userbutton (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++	int button = 0;
++	gpio_direction_input(72);
++	button = gpio_get_value(72);
++	return button;
++}
++
++U_BOOT_CMD(
++	userbutton, CONFIG_SYS_MAXARGS, 1,      do_userbutton,
++	"Return the status of the BeagleBoard USER button",
++	""
++);
++
++
+ #ifndef CONFIG_SKIP_LOWLEVEL_INIT
+ static const struct ddr_data ddr2_data = {
+ 	.datardsratio0 = MT47H128M16RT25E_RD_DQS,
+diff --git a/UBoot/u-boot/include/configs/am335x_evm.h b/UBoot/u-boot/include/configs/am335x_evm.h
+index 476430d..b9917e4 100644
+--- a/UBoot/u-boot/include/configs/am335x_evm.h
++++ b/UBoot/u-boot/include/configs/am335x_evm.h
+@@ -189,6 +189,9 @@
+ #endif
+ 
+ #define CONFIG_BOOTCOMMAND \
++	"if userbutton; then " \
++	"setenv bootenv user.txt;" \
++	"fi;" \
+ 	"run findfdt; " \
+ 	"run mmcboot;" \
+ 	"setenv mmcdev 1; " \
+-- 
+1.7.10
+

@@ -4,7 +4,7 @@ Experiments, Learning, Sharing done at SysPlay on BeagleBone Black (BBB)
 Description of the various folders:
 
 + Apps: Various applications to play with drivers on BBB
-+ Bootloader: u-boot & related stuff for BBB
++ Bootloaders: u-boot & related stuff for BBB
 + Docs: Various BBB related documents used for exploring BBB
 + Drivers: Various drivers to play with BBB
 + EmbC: Bare metal code for BBB
@@ -23,12 +23,16 @@ Brief about the various workshops conducted @ SysPlay (https://sysplay.in)
 
 + Building Embedded Linux System (BELS)
 	> Info Link: https://sysplay.in/index.php?pagefile=bels_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Bootloader, Kernel, RootFS
+	> Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS
 
 + Embedded Linux Porting Advanced (ELPA)
 	> Info Link: https://sysplay.in/index.php?pagefile=elpa_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Bootloader, Kernel, RootFS, Drivers, Apps
+	> Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS, Drivers, Apps
 
 + Embedded Linux Kernel Internals (ELKI)
 	> Info Link: https://sysplay.in/index.php?pagefile=elki_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Kernel, Bootloader, Drivers, Apps
+	> Directories Used: Toolchain, Docs, Images, Original, Kernel, Bootloaders, Drivers, Apps
+
++ Linux Kernel & Drivers Debugging (LKDD)
+	> Info Link: https://sysplay.in/index.php?pagefile=lkdd_weekend_workshop
+	> Directories Used: Toolchain, Docs, Kernel, Bootloaders, Drivers, Apps

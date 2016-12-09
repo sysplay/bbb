@@ -31,8 +31,8 @@ Brief about the various workshops conducted @ SysPlay (https://sysplay.in)
 
 + Embedded Linux Kernel Internals (ELKI)
 	> Info Link: https://sysplay.in/index.php?pagefile=elki_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Kernel, Bootloaders, Drivers, Apps
+	> Directories Used: Toolchain, Docs, Images, Original, Kernel, Drivers, Apps
 
 + Linux Kernel & Drivers Debugging (LKDD)
 	> Info Link: https://sysplay.in/index.php?pagefile=lkdd_weekend_workshop
-	> Directories Used: Toolchain, Docs, Kernel, Bootloaders, Drivers, Apps
+	> Directories Used: Toolchain, Docs, Original, Kernel, Drivers, Apps

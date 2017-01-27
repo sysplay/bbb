@@ -10,7 +10,7 @@ leds_test.elf: leds.o
 
 serial_test.elf: serial.o
 
-switch_test.elf: debug.o serial.o
+switch_test.elf: switch.o leds.o debug.o serial.o
 
 timer_test.elf: timer.o leds.o debug.o serial.o
 

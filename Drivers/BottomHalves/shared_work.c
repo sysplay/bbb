@@ -44,5 +44,5 @@ void cleanup_module(void)
 }
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Delayed Work Queues Demo");

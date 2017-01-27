@@ -1,0 +1,50 @@
+CONFIGFS_HOME=/root/configfs
+
+GADGET_NAME=g1
+VID=0x16c0
+PID=0x05dc
+LANG=0x409 # en
+SNO=0x123456789ABCDEF
+MFG="SysPlay eLearning Academy for You"
+PRODUCT="Device Creation Kit"
+CFG="Default"
+MAX_PWR=300
+FUNC=ncm # usb_f_${FUNC}.ko gets loaded
+INSTANCE=usb0
+UDC_NAME=musb-hdrc.0.auto # /sys/class/udc/*
+
+if [ ! -d ${CONFIGFS_HOME} ]
+then
+	mkdir ${CONFIGFS_HOME}
+fi
+
+if [ ! -d ${CONFIGFS_HOME}/usb_gadget ]
+then
+	mount -t configfs none ${CONFIGFS_HOME}
+fi
+
+if [ -d ${CONFIGFS_HOME}/usb_gadget/${GADGET_NAME} ]
+then
+	echo "Gadget device ${GADGET_NAME} already exists"
+	exit
+fi
+
+mkdir ${CONFIGFS_HOME}/usb_gadget/${GADGET_NAME}
+cd ${CONFIGFS_HOME}/usb_gadget/${GADGET_NAME}
+echo ${VID} > idVendor
+echo ${PID} > idProduct
+
+mkdir -p strings/${LANG}
+echo ${SNO} > strings/${LANG}/serialnumber
+echo ${MFG} > strings/${LANG}/manufacturer
+echo ${PRODUCT} > strings/${LANG}/product
+
+mkdir -p configs/c.1
+mkdir -p configs/c.1/strings/${LANG}
+echo ${CFG} > configs/c.1/strings/${LANG}/configuration
+echo ${MAX_PWR} > configs/c.1/MaxPower
+
+mkdir -p functions/${FUNC}.${INSTANCE}
+ln -s functions/${FUNC}.${INSTANCE} configs/c.1
+
+echo ${UDC_NAME} > UDC

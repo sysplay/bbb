@@ -108,5 +108,5 @@ module_init(rw_sem_init);
 module_exit(rw_sem_cleanup);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Reader Writer Semaphore Demo");

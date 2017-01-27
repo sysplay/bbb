@@ -185,10 +185,12 @@ void interrupt_disable(uint8_t irq)
 void interrupt_handler_register(uint8_t irq, void (*handler)(void))
 {
 	ivt[irq] = handler;
+	INTC_ILR(irq) = (0 << 2) | (0 << 0);
 	interrupt_enable(irq);
 }
 void interrupt_handler_unregister(uint8_t irq)
 {
 	interrupt_disable(irq);
+	INTC_ILR(irq) = 0;
 	ivt[irq] = NULL;
 }

@@ -1,0 +1,22 @@
+#!/bin/bash
+if [ "`lsmod | grep g_mass_storage`" != "" ]; then exit 0; fi
+
+#depmod
+
+eeprom=/sys/bus/i2c/devices/0-0050/eeprom
+
+VERSION=$(perl -e '@x=unpack("A12A4",<>); print $x[1]' ${eeprom})
+#SERIAL_NUMBER=$(perl -e '@x=unpack("A16A12",<>); print $x[1]' ${eeprom})
+#ISBLACK=$(perl -e '@x=unpack("A20A4",<>); print $x[1]' ${eeprom})
+SERIAL_NUMBER=$(hexdump -e '8/1 "%c"' ${eeprom} -s 14 -n 2)-$(hexdump -e '8/1 "%c"' ${eeprom} -s 16 -n 12)
+ISBLACK=$(hexdump -e '8/1 "%c"' ${eeprom} -s 8 -n 4)
+
+BLACK=""
+if [ "${ISBLACK}" = "BBBK" ] ; then
+	BLACK="Black"
+fi
+if [ "${ISBLACK}" = "BNLT" ] ; then
+	BLACK="Black"
+fi
+
+insmod g_mass_storage.ko file=/dev/mmcblk0p3 iSerialNumber=${SERIAL_NUMBER} iManufacturer=Circuitco iProduct=BeagleBone${BLACK}

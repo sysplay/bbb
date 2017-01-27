@@ -57,5 +57,5 @@ module_init(my_init);
 module_exit(my_cleanup);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep Tewani");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("GPIO Interrupts Demo");

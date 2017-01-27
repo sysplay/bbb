@@ -1,33 +1,63 @@
 #include "debug.h"
-#include "bbb.h"
+#include "leds.h"
+#include "switch.h"
+
+#ifdef INTR_BASED_SWITCH
+void handler(void)
+{
+	if (switch_pressed()) // This also clears the switch intr status
+	{
+		print_str("Switch: ");
+		if (switch_read() == sw_released)
+			print_str_nl("Released");
+		else
+			print_str_nl("Pressed");
+
+		leds_toggle(0);
+	}
+}
+#endif
 
 int c_entry(void)
 {
 	debug_init();
+	leds_init();
 
 	scan_char();
 	print_str_nl("Welcome to SysPlay");
 
-	CM_PER_GPIO2_CLKCTRL |= (0x1 << 18) | (0x2 << 0);
-	GPIO2_FALLINGDETECT |= (1 << 8);
-	//GPIO2_RISINGDETECT |= (1 << 8);
-	GPIO2_IRQSTATUS_SET_0 = (1 << 8);
+#ifdef INTR_BASED_SWITCH
+	interrupt_init();
+	switch_handler_register(handler);
+#endif
+	switch_init();
 
 	for (;;)
 	{
-		print_str("Press any key to get switch status: ");
+#ifdef INTR_BASED_SWITCH
+		delay(1000);
+		print_str("> ");
 		scan_char();
-		print_str("Switch St: ");
-		print_hex(GPIO2_IRQSTATUS_0);
-		print_nl();
-		GPIO2_IRQSTATUS_0 = (1 << 8);
+#else
+		if (switch_pressed())
+		{
+			print_str("Switch: ");
+			if (switch_read() == sw_released)
+				print_str_nl("Released");
+			else
+				print_str_nl("Pressed");
+
+			leds_toggle(0);
+		}
+#endif
 	}
 
-	GPIO2_IRQSTATUS_CLR_0 = (1 << 8);
-	GPIO2_RISINGDETECT &= ~(1 << 8);
-	GPIO2_FALLINGDETECT &= ~(1 << 8);
-	CM_PER_GPIO2_CLKCTRL &= ~((0x1 << 18) | (0x2 << 0));
-
+	switch_shut();
+#ifdef INTR_BASED_SWITCH
+	switch_handler_unregister();
+	interrupt_shut();
+#endif
+	leds_shut();
 	debug_shut();
 
 	return 0;

@@ -33,6 +33,10 @@ Brief about the various workshops conducted @ SysPlay (https://sysplay.in)
 	> Info Link: https://sysplay.in/index.php?pagefile=elki_weekend_workshop
 	> Directories Used: Toolchain, Docs, Images, Original, Kernel, Drivers, Apps
 
++ Creating USB Devices (CUD)
+	> Info Link: https://sysplay.in/index.php?pagefile=cud_weekend_workshop
+	> Directories Used: Toolchain, Docs, Original, Kernel, Drivers, Apps
+
 + Linux Kernel & Drivers Debugging (LKDD)
 	> Info Link: https://sysplay.in/index.php?pagefile=lkdd_weekend_workshop
 	> Directories Used: Toolchain, Docs, Original, Kernel, Drivers, Apps

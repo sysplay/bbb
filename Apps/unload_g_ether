@@ -1,0 +1,7 @@
+#!/bin/bash
+
+/etc/init.d/udhcpd stop
+ifdown usb0
+rmmod g_ether usb_f_ecm u_ether
+#rmmod g_ether usb_f_eem u_ether
+#rmmod g_ether usb_f_geth u_ether

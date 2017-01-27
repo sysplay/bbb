@@ -1,0 +1,5 @@
+#!/bin/bash
+
+/etc/init.d/udhcpd stop
+ifdown usb0
+rmmod g_multi u_rndis u_ether usb_f_acm u_serial

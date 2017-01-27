@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rmmod g_mass_storage

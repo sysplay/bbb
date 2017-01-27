@@ -49,5 +49,5 @@ module_init(init_thread);
 module_exit(cleanup_thread);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep Tewani");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Thread Complete Demo");

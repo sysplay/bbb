@@ -92,5 +92,5 @@ void __exit cleanup_module()
 }
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Sysplay Workshops");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("First Character Driver");

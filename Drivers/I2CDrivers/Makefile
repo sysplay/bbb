@@ -1,0 +1,28 @@
+# If called directly from the command line, invoke the kernel build system.
+ifeq ($(KERNELRELEASE),)
+
+	KERNEL_SOURCE := /home/pradeep/EmbeddedLinux/temp/linux-3.12.9
+	PWD := $(shell pwd)
+default:
+	$(MAKE) -C $(KERNEL_SOURCE) SUBDIRS=$(PWD) modules ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- CFLAGS=-DDEBUG
+
+clean:
+	$(MAKE) -C $(KERNEL_SOURCE) SUBDIRS=$(PWD) clean
+
+# Otherwise KERNELRELEASE is defined; we've been invoked from the
+# kernel build system and can use its language.
+else
+
+	#src-m := $(notdir $(wildcard ${SUBDIRS}/*.c))
+	#src-mod := $(notdir $(wildcard ${SUBDIRS}/*.mod.c))
+	#src-m := $(filter-out ${src-mod}, ${src-m})
+	#obj-m := final_char_driver.o i2c-omap.o
+	obj-m := i2c_test.o i2c1.o i2c2.o i2c3.o i2c4.o i2c_client.o i2c-intr.o at24.o
+        i2c_test-y := i2c_char.o i2c-omap.o test1.o
+        i2c1-y := i2c_char.o i2c-omap.o s1.o
+        i2c2-y := i2c_char.o i2c-omap.o s2.o
+        i2c3-y := i2c_char.o i2c-omap.o s3.o
+        i2c4-y := i2c_char4.o i2c-omap.o s4.o
+	i2c-intr-y := i2c_char_intr.o i2c_intr.o
+
+endif

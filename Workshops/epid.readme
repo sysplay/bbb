@@ -1,0 +1,116 @@
+Embedded Peripheral Interface Drivers
+--------------------------------------
+
+Pre-requisites
+--------------
+
++ Linux PC or VM on Windows
++ Minicom or Gtk term installed with baud rate of 115200, 8 data bits, No parity, 1 Stop bit.
++ Tftp sever on Host.
++ Beaglebone Black
++ Toolchain can be downloaded from http://releases.linaro.org/14.04/components/toolchain/binaries/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.bz2
+
+   Board SetUP
+   -----------
+   + Create the bootable FAT32 primary partition on External/Internal MMC card.
+   + Copy all the Images from Images/EpidImages to MMC card. Make sure to copy the MLO first.
+
+   Building the Kernel
+   ------------------
+  + Below are the steps for the same:
+  - Get into the Originals directory and download the source with ./download_sources.sh
+  - untar it with 'tar -jxvf linux-3.12.19.tar.bz2 -C ../Kernel'.
+  - Get into the Kernel/linux-3.12.9 directory and apply the epid patches with below command:
+    > patch -p1 < ../patches/epid.patch
+  - Configure the kernel with below steps:
+    + Copy the patches/config-epid as .config in kernel top level directory.
+    + make ARCH=arm menuconfig
+  - Compile the kernel with make ARCH=arm CROSS_COMPILE=<toolchain-prefix> uImage LOADADDR=0x80008000
+  - This will give you the uImage at linux-3.12.9/arch/arm/boot/
+  - Transfer this is to the board and reboot to boot with new kernel image.
+
+   I2C Drivers
+   -----------
+  + All the hands-on files can be found at bbb/Drivers/I2CDrivers.
+  + Apps used are i2c_app.c, i2c_intr.c, i2c_client_app.c. All are placed at bbb/Apps/
+  + To compile the test drivers run the 'make' command at I2CDrivers. This generates the following:
+    - i2c1.ko - To test the successful transmission of a byte on the I2C bus.
+    - i2c2.ko - To test the successful transmission of a multiple bytes with single transaction on the I2C bus.
+    - i2c3.ko - To test the successful reception of a bytes on I2C bus.
+    - i2c4.ko - To test the I2C transactions using the i2c_msg structure
+    - i2c-intr.ko - To test the I2C transactions with interrupts enabled
+    - i2c_client.ko - I2C Client driver
+    - i2c_test.ko - Test template for basic i2c driver containing read/write methods
+    - at24.ko  - Client driver for at24 based EEPROM
+
+  + Compiling the Apps:
+    - arm-linux-gnueabihf-gcc i2c_app.c -o i2c_app
+    - arm-linux-gnueabihf-gcc i2c_intr.c -o i2c_intr
+    - arm-linux-gnueabihf-gcc i2c_client_app.c -o i2c_client_app
+   
+  + Steps to test it on the board:
+    - Transfer it to board:
+      + Copy the corresponding file to /var/lib/tftpboot
+      + Use tftp -g <server_ip> -r <file_name> to get it on the board.
+      + insmod <file_name>.ko
+      + After successful insertion of module, execute i2c_app for testing i2c_test.ko, i2c1.ko to i2c4.ko and use i2c_intr for i2c-intr.ko.
+      + To test the client driver, get the i2c_client.ko and i2c-intr.ko. Do the insmod of both and use the application i2c_client_app.c
+      + To test the at24.ko client driver, insert the i2c-intr.ko and at24.ko. This will give you the interface:
+        /sys/bus/i2c/drivers/at24/0-0050/eeprom. Use the following command to read/write the eeprom:
+        cat /sys/bus/i2c/drivers/at24/0-0050/eeprom | hexdump -C (Reads the contents of eeprom)
+        cat eeprom.bin > /sys/bus/i2c/drivers/at24/0-0050/eeprom (Writes the contents of file eeprom.bin to eeprom)
+        
+  SPI Driver
+  ---------
+  + All the hands-on files can be found at bbb/Drivers/SPIDrivers.
+  + Apps used are spidev_test.c and spi_adc.c. All are placed at bbb/Apps/
+  + To compile the test drivers run the 'make' command at SPIDrivers. This generates the following:
+    - spi.ko - To test the loopback with spidev_test.c app and MCP3008 ADC with spi_adc.c.
+    - spi1.ko - To test the successful transmission/reception of single character on SPI bus.
+    - spi2.ko - To test the successfull transmission/reception of multiple characters on SPI bus using spi_transfer struct.
+    - spi_test.ko - Test template for basic spi driver containing rw method
+
+  + Compiling the Apps:
+    - arm-linux-gnueabihf-gcc spidev_test.c -o spidev_test.c
+    - arm-linux-gnueabihf-gcc spi_adc.c -o spi_adc
+   
+  + Steps to test it on the board:
+    - Transfer it to board:
+      + Copy the corresponding file to /var/lib/tftpboot
+      + Use tftp -g <server_ip> -r <file_name> to get it on the board.
+      + insmod <file_name>.ko
+      + After successful insertion of module, execute 'cat /dev/spi0' for testing spi1.ko and spi2.ko.
+      + For testing the loopback with spidev, execute the following commands:
+        - insmod spi.ko
+        - ./spidev_test -D /dev/spidev1.1
+      + For testing the ADC, execute the following:
+        - insmode spi.ko
+        - ./spi_adc -D /dev/spidev1.0
+        This will give the ADC readings on Channel 0.
+      Note: Loopback tests require the shorting of spi0_d1 (P9.18) and spi0_d0 (P9.21).
+  
+  TTY Driver
+  ---------- 
+  + All the hands-on files can be found at bbb/Drivers/TTYDrivers.
+  + Apps used are microcom and cat, both of which are built-in.
+  + To compile the test drivers run the 'make' command at TTYDrivers. This generates the following:
+    - serial1.ko - To test the reception of single character in loopback
+    - serial2.ko - To test the multiple characters RX/TX
+    - tiny_serial.ko - Simple hardware independent uart driver interacting with tty layer.
+    - tty_serial.ko - Uart driver for beaglebone black.
+    - serial-test.ko - Test template for basic uart driver to recieve the single character.
+  Note: All the uart hands-on have been tested with loopback, which requires shorting UART1_TXD (P9.24) & UART1_RXD(P9.26).
+
+ + Step to test it on the board:
+   - For testing the serial1.ko and serial2.ko:
+     + insmod <file>.ko 
+     + Execute 'echo abcde > /dev/uart0'
+     + Then execute cat /dev/uart0
+   - For testing tiny_serial.ko and tty_serial.ko:
+     + insmod <file>/ko
+     + Execute 'microcom /dev/ttym0' on one shell
+     + Open another terminal with telnet <ip_addr>
+     + Execute 'echo abcde > /dev/ttym0
+   Note: Use /dev/ttytiny0 for tiny_serial.ko
+ 
+   

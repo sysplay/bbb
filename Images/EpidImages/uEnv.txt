@@ -1,0 +1,5 @@
+serverip=192.168.11.200
+ipaddr=192.168.11.230
+ramboot=setenv bootargs console=ttyO0,115200n8 root=/dev/ram0 rw ramdisk_size=16384 initrd=0x81000000,16M rootfstype=ext2
+uenvcmd=run ramboot;fatload mmc 0:1 81000000 rd-ext2.bin; fatload mmc 0:1 80200000 uImage-epid; fatload mmc 0:1 82000000 am335x-boneblack-epid.dtb; bootm 0x80200000 - 0x82000000;
+

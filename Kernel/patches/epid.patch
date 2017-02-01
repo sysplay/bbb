@@ -1,0 +1,95 @@
+diff -rcNP temp/linux-3.12.9/arch/arm/mach-omap2/Kconfig linux-3.12.9/arch/arm/mach-omap2/Kconfig
+*** temp/linux-3.12.9/arch/arm/mach-omap2/Kconfig	2014-01-25 22:48:00.000000000 +0530
+--- linux-3.12.9/arch/arm/mach-omap2/Kconfig	2017-01-29 18:58:42.087480673 +0530
+***************
+*** 114,121 ****
+  	default y
+  	select AEABI
+  	select HIGHMEM
+- 	select I2C
+- 	select I2C_OMAP
+  	select MENELAUS if ARCH_OMAP2
+  	select NEON if CPU_V7
+  	select PM_RUNTIME
+--- 114,119 ----
+diff -rcNP temp/linux-3.12.9/arch/arm/mach-omap2/omap_hwmod_33xx_data.c linux-3.12.9/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+*** temp/linux-3.12.9/arch/arm/mach-omap2/omap_hwmod_33xx_data.c	2014-01-25 22:48:00.000000000 +0530
+--- linux-3.12.9/arch/arm/mach-omap2/omap_hwmod_33xx_data.c	2017-01-29 19:33:40.964392893 +0530
+***************
+*** 970,976 ****
+  	.name		= "i2c1",
+  	.class		= &i2c_class,
+  	.clkdm_name	= "l4_wkup_clkdm",
+! 	.flags		= HWMOD_16BIT_REG | HWMOD_SET_DEFAULT_CLOCKACT,
+  	.main_clk	= "dpll_per_m2_div4_wkupdm_ck",
+  	.prcm		= {
+  		.omap4	= {
+--- 970,976 ----
+  	.name		= "i2c1",
+  	.class		= &i2c_class,
+  	.clkdm_name	= "l4_wkup_clkdm",
+! 	.flags		= HWMOD_16BIT_REG | HWMOD_SET_DEFAULT_CLOCKACT | HWMOD_INIT_NO_IDLE,
+  	.main_clk	= "dpll_per_m2_div4_wkupdm_ck",
+  	.prcm		= {
+  		.omap4	= {
+***************
+*** 986,992 ****
+  	.name		= "i2c2",
+  	.class		= &i2c_class,
+  	.clkdm_name	= "l4ls_clkdm",
+! 	.flags		= HWMOD_16BIT_REG | HWMOD_SET_DEFAULT_CLOCKACT,
+  	.main_clk	= "dpll_per_m2_div4_ck",
+  	.prcm		= {
+  		.omap4 = {
+--- 986,992 ----
+  	.name		= "i2c2",
+  	.class		= &i2c_class,
+  	.clkdm_name	= "l4ls_clkdm",
+! 	.flags		= HWMOD_16BIT_REG | HWMOD_SET_DEFAULT_CLOCKACT | HWMOD_INIT_NO_IDLE,
+  	.main_clk	= "dpll_per_m2_div4_ck",
+  	.prcm		= {
+  		.omap4 = {
+***************
+*** 1002,1008 ****
+  	.name		= "i2c3",
+  	.class		= &i2c_class,
+  	.clkdm_name	= "l4ls_clkdm",
+! 	.flags		= HWMOD_16BIT_REG | HWMOD_SET_DEFAULT_CLOCKACT,
+  	.main_clk	= "dpll_per_m2_div4_ck",
+  	.prcm		= {
+  		.omap4	= {
+--- 1002,1008 ----
+  	.name		= "i2c3",
+  	.class		= &i2c_class,
+  	.clkdm_name	= "l4ls_clkdm",
+! 	.flags		= HWMOD_16BIT_REG | HWMOD_SET_DEFAULT_CLOCKACT | HWMOD_INIT_NO_IDLE,
+  	.main_clk	= "dpll_per_m2_div4_ck",
+  	.prcm		= {
+  		.omap4	= {
+***************
+*** 1249,1254 ****
+--- 1249,1255 ----
+  	.class		= &am33xx_spi_hwmod_class,
+  	.clkdm_name	= "l4ls_clkdm",
+  	.main_clk	= "dpll_per_m2_div4_ck",
++ 	.flags		= HWMOD_INIT_NO_IDLE,
+  	.prcm		= {
+  		.omap4	= {
+  			.clkctrl_offs	= AM33XX_CM_PER_SPI0_CLKCTRL_OFFSET,
+***************
+*** 1533,1539 ****
+  	.name		= "uart2",
+  	.class		= &uart_class,
+  	.clkdm_name	= "l4ls_clkdm",
+! 	.flags		= HWMOD_SWSUP_SIDLE_ACT,
+  	.main_clk	= "dpll_per_m2_div4_ck",
+  	.prcm		= {
+  		.omap4	= {
+--- 1534,1540 ----
+  	.name		= "uart2",
+  	.class		= &uart_class,
+  	.clkdm_name	= "l4ls_clkdm",
+! 	.flags		= HWMOD_SWSUP_SIDLE_ACT | HWMOD_INIT_NO_IDLE,
+  	.main_clk	= "dpll_per_m2_div4_ck",
+  	.prcm		= {
+  		.omap4	= {

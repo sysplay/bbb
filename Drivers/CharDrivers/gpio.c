@@ -46,7 +46,17 @@ static long gpio_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			}
 			break;
 		case BBB_LED_SET:
-			gpio_set_value(gpio_number[d.num], 0 /* TODO: Pass the user value here */);
+			gpio_set_value(gpio_number[d.num], d.val);
+			break;
+		case BBB_GPIO_GET:
+			d.val = gpio_get_value(d.num);
+			if (copy_to_user((LEDData *)arg, &d, sizeof(LEDData)))
+			{
+				return -EFAULT;
+			}
+			break;
+		case BBB_GPIO_SET:
+			gpio_set_value(d.num, d.val);
 			break;
 		default:
 			return -EINVAL;

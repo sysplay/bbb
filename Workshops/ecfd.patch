@@ -1,6 +1,6 @@
 diff -Naur EmbC/Makefile EmbCWksp/Makefile
---- EmbC/Makefile	2016-04-25 09:13:30.149163227 +0530
-+++ EmbCWksp/Makefile	2016-04-25 09:13:19.728046073 +0530
+--- EmbC/Makefile	2017-03-09 17:12:55.168593705 +0530
++++ EmbCWksp/Makefile	2017-03-09 18:47:14.018356744 +0530
 @@ -1,5 +1,5 @@
 -#SRCS := first.c
 -SRCS := blink_led.c leds_test.c serial_test.c switch_test.c timer_test.c eeprom_test.c fw_app.c decode_xmodem.c
@@ -10,25 +10,24 @@ diff -Naur EmbC/Makefile EmbCWksp/Makefile
  
  all: ${BINS}
 diff -Naur EmbC/rules.mk EmbCWksp/rules.mk
---- EmbC/rules.mk	2016-04-25 09:09:33.506502885 +0530
-+++ EmbCWksp/rules.mk	2016-04-25 09:12:18.204354422 +0530
-@@ -11,8 +11,9 @@
- #CFLAGS = -mcpu=cortex-a8 -mfpu=neon ${OPTIMIZATION_FLAGS}
- ASFLAGS = -mcpu=cortex-a8
- #ASFLAGS = -mcpu=cortex-a8 -mfpu=neon
-+# TODO
+--- EmbC/rules.mk	2017-03-09 17:13:29.671724520 +0530
++++ EmbCWksp/rules.mk	2017-03-09 18:47:58.179309212 +0530
+@@ -13,8 +13,8 @@
+ ASFLAGS := -mcpu=cortex-a8
+ #ASFLAGS += -mfpu=neon
  #LDFLAGS = -T first.lds
 -LDFLAGS = -T linker.lds
+-LDFLAGS += -Map=$*.map
 +#LDFLAGS = -T linker.lds
++#LDFLAGS += -Map=$*.map
  
  TARGET ?= code
  
-@@ -21,10 +22,11 @@
+@@ -23,10 +23,10 @@
  %.bin: %.elf
  	${OBJCOPY} --gap-fill=0xFF -O binary $< $@
  
 -#%.elf: %.o
-+# TODO
 +%.elf: %.o
  #%.elf: %.o first_startup.o
  #%.elf: %.o common.o first_startup.o

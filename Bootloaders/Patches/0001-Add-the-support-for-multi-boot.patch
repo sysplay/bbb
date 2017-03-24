@@ -1,16 +1,16 @@
-From e4f0e006986c6f66f21fe6822cdcfe9044d5e664 Mon Sep 17 00:00:00 2001
+From a822617368d8024ef3ce85199f3cabfe0d31a2eb Mon Sep 17 00:00:00 2001
 From: Pradeep Tewani <pradeep@sysplay.in>
-Date: Fri, 25 Nov 2016 18:58:39 +0530
-Subject: [PATCH] Add the support for multi-boot
+Date: Fri, 24 Mar 2017 18:15:55 +0530
+Subject: [PATCH] Added the multiboot support in u-boot
 
 ---
- UBoot/u-boot/common/autoboot.c |   42 ++++++++++++++++++++++++++++++++++++++++
+ Bootloaders/u-boot/common/autoboot.c |   42 ++++++++++++++++++++++++++++++++++
  1 file changed, 42 insertions(+)
 
-diff --git a/UBoot/u-boot/common/autoboot.c b/UBoot/u-boot/common/autoboot.c
+diff --git a/Bootloaders/u-boot/common/autoboot.c b/Bootloaders/u-boot/common/autoboot.c
 index c27cc2c..56f82d4 100644
---- a/UBoot/u-boot/common/autoboot.c
-+++ b/UBoot/u-boot/common/autoboot.c
+--- a/Bootloaders/u-boot/common/autoboot.c
++++ b/Bootloaders/u-boot/common/autoboot.c
 @@ -226,6 +226,41 @@ static void process_fdt_options(const void *blob)
  #endif /* CONFIG_OF_CONTROL */
  }

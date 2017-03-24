@@ -1,19 +1,19 @@
-From 63e33235f979503e28d77fae9e78d7c199a97cd4 Mon Sep 17 00:00:00 2001
+From 6f80b6be08c8a25b8ad0fb76bb9dd6ac145f6998 Mon Sep 17 00:00:00 2001
 From: Pradeep Tewani <pradeep@sysplay.in>
-Date: Fri, 25 Nov 2016 18:38:55 +0530
-Subject: [PATCH] Add LED controlling support in x-loader
+Date: Fri, 24 Mar 2017 18:00:54 +0530
+Subject: [PATCH] Added the LED control support in x-loader
 
 ---
- UBoot/u-boot/board/ti/am335x/board.c |   29 +++++++++++++++++++++++++++++
- UBoot/u-boot/board/ti/am335x/mux.c   |    9 +++++++++
- UBoot/u-boot/common/spl/spl.c        |    2 ++
- UBoot/u-boot/include/common.h        |    1 +
+ Bootloaders/u-boot/board/ti/am335x/board.c |   29 ++++++++++++++++++++++++++++
+ Bootloaders/u-boot/board/ti/am335x/mux.c   |    9 +++++++++
+ Bootloaders/u-boot/common/spl/spl.c        |    2 ++
+ Bootloaders/u-boot/include/common.h        |    1 +
  4 files changed, 41 insertions(+)
 
-diff --git a/UBoot/u-boot/board/ti/am335x/board.c b/UBoot/u-boot/board/ti/am335x/board.c
+diff --git a/Bootloaders/u-boot/board/ti/am335x/board.c b/Bootloaders/u-boot/board/ti/am335x/board.c
 index cda9c6b..3262786 100644
---- a/UBoot/u-boot/board/ti/am335x/board.c
-+++ b/UBoot/u-boot/board/ti/am335x/board.c
+--- a/Bootloaders/u-boot/board/ti/am335x/board.c
++++ b/Bootloaders/u-boot/board/ti/am335x/board.c
 @@ -229,6 +229,35 @@ const struct dpll_params *get_dpll_ddr_params(void)
  	return &dpll_ddr_bone_black;
  }
@@ -50,10 +50,10 @@ index cda9c6b..3262786 100644
  
  void set_uart_mux_conf(void)
  {
-diff --git a/UBoot/u-boot/board/ti/am335x/mux.c b/UBoot/u-boot/board/ti/am335x/mux.c
+diff --git a/Bootloaders/u-boot/board/ti/am335x/mux.c b/Bootloaders/u-boot/board/ti/am335x/mux.c
 index aeb08c2..0d8fa19 100644
---- a/UBoot/u-boot/board/ti/am335x/mux.c
-+++ b/UBoot/u-boot/board/ti/am335x/mux.c
+--- a/Bootloaders/u-boot/board/ti/am335x/mux.c
++++ b/Bootloaders/u-boot/board/ti/am335x/mux.c
 @@ -98,6 +98,14 @@ static struct module_pin_mux i2c1_pin_mux[] = {
  	{-1},
  };
@@ -77,10 +77,10 @@ index aeb08c2..0d8fa19 100644
  	configure_module_pin_mux(mii1_pin_mux);
  	configure_module_pin_mux(mmc0_pin_mux);
  	configure_module_pin_mux(mmc1_pin_mux);
-diff --git a/UBoot/u-boot/common/spl/spl.c b/UBoot/u-boot/common/spl/spl.c
+diff --git a/Bootloaders/u-boot/common/spl/spl.c b/Bootloaders/u-boot/common/spl/spl.c
 index 0e08f50..82bfc20 100644
---- a/UBoot/u-boot/common/spl/spl.c
-+++ b/UBoot/u-boot/common/spl/spl.c
+--- a/Bootloaders/u-boot/common/spl/spl.c
++++ b/Bootloaders/u-boot/common/spl/spl.c
 @@ -145,6 +145,8 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
  	 */
  	timer_init();
@@ -90,10 +90,10 @@ index 0e08f50..82bfc20 100644
  #ifdef CONFIG_SPL_BOARD_INIT
  	spl_board_init();
  #endif
-diff --git a/UBoot/u-boot/include/common.h b/UBoot/u-boot/include/common.h
+diff --git a/Bootloaders/u-boot/include/common.h b/Bootloaders/u-boot/include/common.h
 index d5020c8..27666df 100644
---- a/UBoot/u-boot/include/common.h
-+++ b/UBoot/u-boot/include/common.h
+--- a/Bootloaders/u-boot/include/common.h
++++ b/Bootloaders/u-boot/include/common.h
 @@ -283,6 +283,7 @@ int	checkboard    (void);
  int	checkflash    (void);
  int	checkdram     (void);

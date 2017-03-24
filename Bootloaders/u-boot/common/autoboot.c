@@ -226,41 +226,6 @@ static void process_fdt_options(const void *blob)
 #endif /* CONFIG_OF_CONTROL */
 }
 
-int multiboot(void)
-{
-	unsigned char choice;
-	char *envs[] = {"EnvMmc.txt", "EnvUsb.txt", "EnvRam.txt", "EnvNfs.txt", "EnvConsole.txt"};
-
-	do
-	{
-		printf("\n\n1: Boot From MMC\n");
-		printf("2: Boot From Usb\n");
-		printf("3: Boot Using Ram Disk\n");
-		printf("4: Boot Using Nfs\n");
-		printf("5: Boot the console Image\n");
-		printf("0: Stay in Boot Mode\n");
-		printf("\nEnter Your Choice: \n");
-		choice = getc();
-		choice -= '0';
-
-		if (choice < 0 || choice > 5)
-		{
-			printf("Wrong Choice\n");
-			continue;
-		}
-		if (choice != 0)
-		{
-			setenv("bootenv", envs[choice - 1]);
-			return 1;
-		}
-		return 0;
-
-	} while(1);
-
-	return 0;
-}
-
-
 const char *bootdelay_process(void)
 {
 	char *s;
@@ -328,13 +293,6 @@ void autoboot_command(const char *s)
 		disable_ctrlc(prev);	/* restore Control C checking */
 #endif
 	}
-
-	if(multiboot())
-	{
-		s = getenv ("bootcmd");
-		run_command_list(s, -1, 0);
-	}
-
 
 #ifdef CONFIG_MENUKEY
 	if (menukey == CONFIG_MENUKEY) {

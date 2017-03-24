@@ -98,14 +98,6 @@ static struct module_pin_mux i2c1_pin_mux[] = {
 	{-1},
 };
 
-static struct module_pin_mux gpio_led_pin_mux[] = {
-	{OFFSET(gpmc_a5), (MODE(7) | PULLUDDIS)},       /* GPI1_21 */
-	{OFFSET(gpmc_a6), (MODE(7) | PULLUDDIS)},       /* GPI1_22 */
-	{OFFSET(gpmc_a7), (MODE(7) | PULLUDDIS)},       /* GPI1_23 */
-	{OFFSET(gpmc_a8), (MODE(7) | PULLUDDIS)},       /* GPI1_24 */
-	{-1},
-};
-
 static struct module_pin_mux mii1_pin_mux[] = {
 	{OFFSET(mii1_rxerr), MODE(0) | RXACTIVE},	/* MII1_RXERR */
 	{OFFSET(mii1_txen), MODE(0)},			/* MII1_TXEN */
@@ -169,7 +161,6 @@ void enable_board_pin_mux()
 {
 	/* Beaglebone LT pinmux */
 	configure_module_pin_mux(i2c1_pin_mux);
-	configure_module_pin_mux(gpio_led_pin_mux);
 	configure_module_pin_mux(mii1_pin_mux);
 	configure_module_pin_mux(mmc0_pin_mux);
 	configure_module_pin_mux(mmc1_pin_mux);

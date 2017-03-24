@@ -1,16 +1,16 @@
-From 185fa71f060ae1bee086c9825dd0c4862564ce60 Mon Sep 17 00:00:00 2001
+From 5069a7f63c392518a1cdf9dec837133a9f7182f9 Mon Sep 17 00:00:00 2001
 From: Pradeep Tewani <pradeep@sysplay.in>
-Date: Fri, 25 Nov 2016 19:42:32 +0530
-Subject: [PATCH] Add the support for saving the env in eeprom
+Date: Fri, 24 Mar 2017 18:27:48 +0530
+Subject: [PATCH] Added the ENV in EEPROM support
 
 ---
- UBoot/u-boot/include/configs/am335x_evm.h |   12 ++++++++++--
+ Bootloaders/u-boot/include/configs/am335x_evm.h |   12 ++++++++++--
  1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/UBoot/u-boot/include/configs/am335x_evm.h b/UBoot/u-boot/include/configs/am335x_evm.h
+diff --git a/Bootloaders/u-boot/include/configs/am335x_evm.h b/Bootloaders/u-boot/include/configs/am335x_evm.h
 index fef59ea..32f9276 100644
---- a/UBoot/u-boot/include/configs/am335x_evm.h
-+++ b/UBoot/u-boot/include/configs/am335x_evm.h
+--- a/Bootloaders/u-boot/include/configs/am335x_evm.h
++++ b/Bootloaders/u-boot/include/configs/am335x_evm.h
 @@ -42,7 +42,7 @@
  #define CONFIG_SYS_LDSCRIPT		"board/ti/am335x/u-boot.lds"
  

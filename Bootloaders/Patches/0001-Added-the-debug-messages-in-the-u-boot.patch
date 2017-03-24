@@ -1,0 +1,583 @@
+From 1cd7b87c4a2b1fd6d1859c04667cd6a011a108c6 Mon Sep 17 00:00:00 2001
+From: Pradeep Tewani <pradeep@sysplay.in>
+Date: Fri, 24 Mar 2017 21:54:01 +0530
+Subject: [PATCH] Added the debug messages in the u-boot
+
+---
+ .../u-boot/arch/arm/cpu/armv7/am33xx/board.c       |    3 ++
+ .../u-boot/arch/arm/cpu/armv7/am33xx/clock.c       |    3 ++
+ Bootloaders/u-boot/arch/arm/lib/bootm.c            |    4 +-
+ Bootloaders/u-boot/arch/arm/lib/spl.c              |    3 ++
+ Bootloaders/u-boot/board/ti/am335x/board.c         |    6 +++
+ Bootloaders/u-boot/board/ti/am335x/mux.c           |    1 +
+ Bootloaders/u-boot/common/board_f.c                |    3 ++
+ Bootloaders/u-boot/common/board_r.c                |    4 ++
+ Bootloaders/u-boot/common/bootstage.c              |    1 +
+ Bootloaders/u-boot/common/cmd_eeprom.c             |    1 +
+ Bootloaders/u-boot/common/cmd_nvedit.c             |    4 +-
+ Bootloaders/u-boot/common/env_common.c             |    2 +
+ Bootloaders/u-boot/common/env_eeprom.c             |    1 +
+ Bootloaders/u-boot/common/spl/spl.c                |    2 +
+ Bootloaders/u-boot/common/spl/spl_mmc.c            |    2 +
+ Bootloaders/u-boot/drivers/i2c/i2c_core.c          |    2 +
+ Bootloaders/u-boot/drivers/serial/ns16550.c        |    3 ++
+ Bootloaders/u-boot/drivers/serial/serial.c         |    1 +
+ Bootloaders/u-boot/fs/fat/fat.c                    |   42 ++++++++++----------
+ Bootloaders/u-boot/include/common.h                |    6 ++-
+ Bootloaders/u-boot/lib/hashtable.c                 |   11 ++---
+ Bootloaders/u-boot/lib/initcall.c                  |    4 +-
+ 22 files changed, 78 insertions(+), 31 deletions(-)
+
+diff --git a/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/board.c b/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/board.c
+index 1a85a3f..ff28e91 100644
+--- a/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/board.c
++++ b/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/board.c
+@@ -150,6 +150,8 @@ int arch_misc_init(void)
+  */
+ int board_early_init_f(void)
+ {
++	debug("\n****First level of Initialization******\n");
++	ENTER();
+ 	prcm_init();
+ 	set_mux_conf_regs();
+ 
+@@ -169,6 +171,7 @@ __weak void am33xx_spl_board_init(void)
+ #if defined(CONFIG_SPL_AM33XX_ENABLE_RTC32K_OSC)
+ static void rtc32k_enable(void)
+ {
++	ENTER();
+ 	struct davinci_rtc *rtc = (struct davinci_rtc *)RTC_BASE;
+ 
+ 	/*
+diff --git a/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/clock.c b/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/clock.c
+index ec7d468..b6b6322 100644
+--- a/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/clock.c
++++ b/Bootloaders/u-boot/arch/arm/cpu/armv7/am33xx/clock.c
+@@ -101,6 +101,7 @@ void do_setup_dpll(const struct dpll_regs *dpll_regs,
+ static void setup_dplls(void)
+ {
+ 	const struct dpll_params *params;
++	ENTER();
+ 
+ 	params = get_dpll_core_params();
+ 	do_setup_dpll(&dpll_core_regs, params);
+@@ -182,6 +183,8 @@ __weak void scale_vcores(void)
+ 
+ void prcm_init()
+ {
++	debug("Initialize the various clocks\n");
++	ENTER();
+ 	enable_basic_clocks();
+ 	scale_vcores();
+ 	setup_dplls();
+diff --git a/Bootloaders/u-boot/arch/arm/lib/bootm.c b/Bootloaders/u-boot/arch/arm/lib/bootm.c
+index 39fe7a1..6782e2e 100644
+--- a/Bootloaders/u-boot/arch/arm/lib/bootm.c
++++ b/Bootloaders/u-boot/arch/arm/lib/bootm.c
+@@ -200,6 +200,7 @@ static void do_nonsec_virt_switch(void)
+ /* Subcommand: PREP */
+ static void boot_prep_linux(bootm_headers_t *images)
+ {
++	ENTER();
+ 	char *commandline = getenv("bootargs");
+ 
+ 	if (IMAGE_ENABLE_OF_LIBFDT && images->ft_len) {
+@@ -301,6 +302,7 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
+  */
+ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+ {
++	ENTER();
+ 	/* No need for those on ARM */
+ 	if (flag & BOOTM_STATE_OS_BD_T || flag & BOOTM_STATE_OS_CMDLINE)
+ 		return -1;
+@@ -314,7 +316,7 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+ 		boot_jump_linux(images, flag);
+ 		return 0;
+ 	}
+-
++	printf("Prepare and Jump to Linux\n");
+ 	boot_prep_linux(images);
+ 	boot_jump_linux(images, flag);
+ 	return 0;
+diff --git a/Bootloaders/u-boot/arch/arm/lib/spl.c b/Bootloaders/u-boot/arch/arm/lib/spl.c
+index dfcc596..bd25399 100644
+--- a/Bootloaders/u-boot/arch/arm/lib/spl.c
++++ b/Bootloaders/u-boot/arch/arm/lib/spl.c
+@@ -25,6 +25,9 @@ gd_t gdata __attribute__ ((section(".data")));
+  */
+ void __weak board_init_f(ulong dummy)
+ {
++	printf("\n******Final Initialization*******\n");
++	printf("\n******Only SPL executes this*******\n");
++	ENTER();
+ 	/* Clear the BSS. */
+ 	memset(__bss_start, 0, __bss_end - __bss_start);
+ 
+diff --git a/Bootloaders/u-boot/board/ti/am335x/board.c b/Bootloaders/u-boot/board/ti/am335x/board.c
+index cda9c6b..7215394 100644
+--- a/Bootloaders/u-boot/board/ti/am335x/board.c
++++ b/Bootloaders/u-boot/board/ti/am335x/board.c
+@@ -223,6 +223,7 @@ void am33xx_spl_board_init(void)
+ 
+ const struct dpll_params *get_dpll_ddr_params(void)
+ {
++	ENTER();
+ 	enable_i2c0_pin_mux();
+ 	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
+ 
+@@ -249,6 +250,8 @@ void set_uart_mux_conf(void)
+ 
+ void set_mux_conf_regs(void)
+ {
++	ENTER();
++	printf("\n*******PIN MULTIPLEXING*********\n");
+ 	enable_board_pin_mux();
+ }
+ 
+@@ -286,6 +289,8 @@ const struct ctrl_ioregs ioregs = {
+ 
+ void sdram_init(void)
+ {
++		printf("\n*******Initialize SDRAM*******\n");
++		ENTER();
+ 	config_ddr(400, &ioregs_bonelt,
+ 			&ddr3_beagleblack_data,
+ 			&ddr3_beagleblack_cmd_ctrl_data,
+@@ -298,6 +303,7 @@ void sdram_init(void)
+  */
+ int board_init(void)
+ {
++	ENTER();
+ #if defined(CONFIG_HW_WATCHDOG)
+ 	hw_watchdog_init();
+ #endif
+diff --git a/Bootloaders/u-boot/board/ti/am335x/mux.c b/Bootloaders/u-boot/board/ti/am335x/mux.c
+index aeb08c2..5c5e7fd 100644
+--- a/Bootloaders/u-boot/board/ti/am335x/mux.c
++++ b/Bootloaders/u-boot/board/ti/am335x/mux.c
+@@ -149,6 +149,7 @@ void enable_uart5_pin_mux(void)
+ 
+ void enable_i2c0_pin_mux(void)
+ {
++	ENTER();
+ 	configure_module_pin_mux(i2c0_pin_mux);
+ }
+ 
+diff --git a/Bootloaders/u-boot/common/board_f.c b/Bootloaders/u-boot/common/board_f.c
+index aac480b..21a8243 100644
+--- a/Bootloaders/u-boot/common/board_f.c
++++ b/Bootloaders/u-boot/common/board_f.c
+@@ -504,6 +504,7 @@ static int reserve_board(void)
+ 
+ static int setup_machine(void)
+ {
++	ENTER();
+ #ifdef CONFIG_MACH_TYPE
+ 	gd->bd->bi_arch_number = CONFIG_MACH_TYPE; /* board id for Linux */
+ #endif
+@@ -824,6 +825,7 @@ static init_fnc_t init_sequence_f[] = {
+ 
+ void board_init_f(ulong boot_flags)
+ {
++		ENTER();
+ #ifdef CONFIG_SYS_GENERIC_GLOBAL_DATA
+ 	/*
+ 	 * For some archtectures, global data is initialized and used before
+@@ -884,6 +886,7 @@ static init_fnc_t init_sequence_f_r[] = {
+ 
+ void board_init_f_r(void)
+ {
++	ENTER();
+ 	if (initcall_run_list(init_sequence_f_r))
+ 		hang();
+ 
+diff --git a/Bootloaders/u-boot/common/board_r.c b/Bootloaders/u-boot/common/board_r.c
+index a4ed82b..a64b610 100644
+--- a/Bootloaders/u-boot/common/board_r.c
++++ b/Bootloaders/u-boot/common/board_r.c
+@@ -691,6 +691,8 @@ static int initr_kbd(void)
+ 
+ static int run_main_loop(void)
+ {
++	ENTER();
++	printk("*******Invoke Main Loop*******");
+ 	/* main_loop() can return to retry autoboot, if so just run it again */
+ 	for (;;)
+ 		main_loop();
+@@ -761,6 +763,8 @@ init_fnc_t init_sequence_r[] = {
+ 
+ void board_init_r(gd_t *new_gd, ulong dest_addr)
+ {
++	ENTER();
++	printf("\n\nFinal Initialization for u-boot\n\n");
+ 	if (initcall_run_list(init_sequence_r))
+ 		hang();
+ 
+diff --git a/Bootloaders/u-boot/common/bootstage.c b/Bootloaders/u-boot/common/bootstage.c
+index 35bce3d..dc9aa81 100644
+--- a/Bootloaders/u-boot/common/bootstage.c
++++ b/Bootloaders/u-boot/common/bootstage.c
+@@ -46,6 +46,7 @@ struct bootstage_hdr {
+ int bootstage_relocate(void)
+ {
+ 	int i;
++	ENTER();
+ 
+ 	/*
+ 	 * Duplicate all strings.  They may point to an old location in the
+diff --git a/Bootloaders/u-boot/common/cmd_eeprom.c b/Bootloaders/u-boot/common/cmd_eeprom.c
+index a02f0cb..3ab32d5 100644
+--- a/Bootloaders/u-boot/common/cmd_eeprom.c
++++ b/Bootloaders/u-boot/common/cmd_eeprom.c
+@@ -385,6 +385,7 @@ eeprom_probe (unsigned dev_addr, unsigned offset)
+ 
+ void eeprom_init  (void)
+ {
++	ENTER();
+ 
+ #if defined(CONFIG_SPI) && !defined(CONFIG_ENV_EEPROM_IS_ON_I2C)
+ 	spi_init_f ();
+diff --git a/Bootloaders/u-boot/common/cmd_nvedit.c b/Bootloaders/u-boot/common/cmd_nvedit.c
+index 855808c..a19a573 100644
+--- a/Bootloaders/u-boot/common/cmd_nvedit.c
++++ b/Bootloaders/u-boot/common/cmd_nvedit.c
+@@ -214,7 +214,7 @@ static int _do_env_set(int flag, int argc, char * const argv[])
+ 	ENTRY e, *ep;
+ 	int env_flag = H_INTERACTIVE;
+ 
+-	debug("Initial value for argc=%d\n", argc);
++	//debug("Initial value for argc=%d\n", argc);
+ 	while (argc > 1 && **(argv + 1) == '-') {
+ 		char *arg = *++argv;
+ 
+@@ -229,7 +229,7 @@ static int _do_env_set(int flag, int argc, char * const argv[])
+ 			}
+ 		}
+ 	}
+-	debug("Final value for argc=%d\n", argc);
++	//debug("Final value for argc=%d\n", argc);
+ 	name = argv[1];
+ 	value = argv[2];
+ 
+diff --git a/Bootloaders/u-boot/common/env_common.c b/Bootloaders/u-boot/common/env_common.c
+index af59c72..d69d169 100644
+--- a/Bootloaders/u-boot/common/env_common.c
++++ b/Bootloaders/u-boot/common/env_common.c
+@@ -251,6 +251,8 @@ int env_export(env_t *env_out)
+ 
+ void env_relocate(void)
+ {
++	ENTER();
++	printf("\nRelocate Environment\n");
+ #if defined(CONFIG_NEEDS_MANUAL_RELOC)
+ 	env_reloc();
+ 	env_htab.change_ok += gd->reloc_off;
+diff --git a/Bootloaders/u-boot/common/env_eeprom.c b/Bootloaders/u-boot/common/env_eeprom.c
+index 905d39a..6c6ce86 100644
+--- a/Bootloaders/u-boot/common/env_eeprom.c
++++ b/Bootloaders/u-boot/common/env_eeprom.c
+@@ -152,6 +152,7 @@ int env_init(void)
+ 	unsigned int off, off_env[2];
+ 	uchar buf[64], flags[2];
+ 	int i, crc_ok[2] = {0, 0};
++	ENTER();
+ 
+ 	eeprom_init();	/* prepare for EEPROM read/write */
+ 
+diff --git a/Bootloaders/u-boot/common/spl/spl.c b/Bootloaders/u-boot/common/spl/spl.c
+index 0e08f50..ee47ece 100644
+--- a/Bootloaders/u-boot/common/spl/spl.c
++++ b/Bootloaders/u-boot/common/spl/spl.c
+@@ -133,6 +133,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
+ {
+ 	u32 boot_device;
+ 	debug(">>spl:board_init_r()\n");
++	ENTER();
+ 
+ #ifdef CONFIG_SYS_SPL_MALLOC_START
+ 	mem_malloc_init(CONFIG_SYS_SPL_MALLOC_START,
+@@ -206,6 +207,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
+ 	default:
+ 		debug("Unsupported OS image.. Jumping nevertheless..\n");
+ 	}
++	debug("********JUMPING TO U-BOOT IMAGE**********\n");
+ 	jump_to_image_no_args(&spl_image);
+ }
+ 
+diff --git a/Bootloaders/u-boot/common/spl/spl_mmc.c b/Bootloaders/u-boot/common/spl/spl_mmc.c
+index fa6f891..db04822 100644
+--- a/Bootloaders/u-boot/common/spl/spl_mmc.c
++++ b/Bootloaders/u-boot/common/spl/spl_mmc.c
+@@ -73,6 +73,8 @@ void spl_mmc_load_image(void)
+ 	struct mmc *mmc;
+ 	int err;
+ 	u32 boot_mode;
++	ENTER();
++	debug("Load u-boot image\n");
+ 
+ 	mmc_initialize(gd->bd);
+ 	/* We register only one device. So, the dev id is always 0 */
+diff --git a/Bootloaders/u-boot/drivers/i2c/i2c_core.c b/Bootloaders/u-boot/drivers/i2c/i2c_core.c
+index 18d6736..8af70f3 100644
+--- a/Bootloaders/u-boot/drivers/i2c/i2c_core.c
++++ b/Bootloaders/u-boot/drivers/i2c/i2c_core.c
+@@ -216,6 +216,7 @@ static int i2c_mux_disconnet_all(void)
+  */
+ static void i2c_init_bus(unsigned int bus_no, int speed, int slaveaddr)
+ {
++	ENTER();
+ 	if (bus_no >= CONFIG_SYS_NUM_I2C_BUSES)
+ 		return;
+ 
+@@ -397,6 +398,7 @@ void i2c_reg_write(uint8_t addr, uint8_t reg, uint8_t val)
+ 
+ void __i2c_init(int speed, int slaveaddr)
+ {
++	ENTER();
+ 	i2c_init_bus(i2c_get_bus_num(), speed, slaveaddr);
+ }
+ void i2c_init(int speed, int slaveaddr)
+diff --git a/Bootloaders/u-boot/drivers/serial/ns16550.c b/Bootloaders/u-boot/drivers/serial/ns16550.c
+index 63a9ef6..883aeff 100644
+--- a/Bootloaders/u-boot/drivers/serial/ns16550.c
++++ b/Bootloaders/u-boot/drivers/serial/ns16550.c
+@@ -124,6 +124,7 @@ int ns16550_calc_divisor(NS16550_t port, int clock, int baudrate)
+ 
+ static void NS16550_setbrg(NS16550_t com_port, int baud_divisor)
+ {
++	ENTER();
+ 	serial_out(UART_LCR_BKSE | UART_LCRVAL, &com_port->lcr);
+ 	serial_out(baud_divisor & 0xff, &com_port->dll);
+ 	serial_out((baud_divisor >> 8) & 0xff, &com_port->dlm);
+@@ -132,6 +133,7 @@ static void NS16550_setbrg(NS16550_t com_port, int baud_divisor)
+ 
+ void NS16550_init(NS16550_t com_port, int baud_divisor)
+ {
++	ENTER();
+ #if (defined(CONFIG_SPL_BUILD) && defined(CONFIG_OMAP34XX))
+ 	/*
+ 	 * On some OMAP3 devices when UART3 is configured for boot mode before
+@@ -174,6 +176,7 @@ void NS16550_init(NS16550_t com_port, int baud_divisor)
+ #ifndef CONFIG_NS16550_MIN_FUNCTIONS
+ void NS16550_reinit(NS16550_t com_port, int baud_divisor)
+ {
++	ENTER();
+ 	serial_out(CONFIG_SYS_NS16550_IER, &com_port->ier);
+ 	NS16550_setbrg(com_port, 0);
+ 	serial_out(UART_MCRVAL, &com_port->mcr);
+diff --git a/Bootloaders/u-boot/drivers/serial/serial.c b/Bootloaders/u-boot/drivers/serial/serial.c
+index 82fbbd9..09821a8 100644
+--- a/Bootloaders/u-boot/drivers/serial/serial.c
++++ b/Bootloaders/u-boot/drivers/serial/serial.c
+@@ -421,6 +421,7 @@ static struct serial_device *get_current(void)
+  */
+ int serial_init(void)
+ {
++	ENTER();
+ 	gd->flags |= GD_FLG_SERIAL_READY;
+ 	return get_current()->start();
+ }
+diff --git a/Bootloaders/u-boot/fs/fat/fat.c b/Bootloaders/u-boot/fs/fat/fat.c
+index 561921f..a601843 100644
+--- a/Bootloaders/u-boot/fs/fat/fat.c
++++ b/Bootloaders/u-boot/fs/fat/fat.c
+@@ -184,8 +184,8 @@ static __u32 get_fatent(fsdata *mydata, __u32 entry)
+ 		return ret;
+ 	}
+ 
+-	debug("FAT%d: entry: 0x%04x = %d, offset: 0x%04x = %d\n",
+-	       mydata->fatsize, entry, entry, offset, offset);
++	//debug("FAT%d: entry: 0x%04x = %d, offset: 0x%04x = %d\n",
++	       //mydata->fatsize, entry, entry, offset, offset);
+ 
+ 	/* Read a new block of FAT entries into the cache. */
+ 	if (bufnum != mydata->fatbufnum) {
+@@ -245,8 +245,8 @@ static __u32 get_fatent(fsdata *mydata, __u32 entry)
+ 		}
+ 		break;
+ 	}
+-	debug("FAT%d: ret: %08x, offset: %04x\n",
+-	       mydata->fatsize, ret, offset);
++	//debug("FAT%d: ret: %08x, offset: %04x\n",
++	 //      mydata->fatsize, ret, offset);
+ 
+ 	return ret;
+ }
+@@ -269,7 +269,7 @@ get_cluster(fsdata *mydata, __u32 clustnum, __u8 *buffer, unsigned long size)
+ 		startsect = mydata->rootdir_sect;
+ 	}
+ 
+-	debug("gc - clustnum: %d, startsect: %d\n", clustnum, startsect);
++	//debug("gc - clustnum: %d, startsect: %d\n", clustnum, startsect);
+ 
+ 	if ((unsigned long)buffer & (ARCH_DMA_MINALIGN - 1)) {
+ 		ALLOC_CACHE_ALIGN_BUFFER(__u8, tmpbuf, mydata->sect_size);
+@@ -332,7 +332,7 @@ get_contents(fsdata *mydata, dir_entry *dentptr, unsigned long pos,
+ 	__u32 endclust, newclust;
+ 	unsigned long actsize;
+ 
+-	debug("Filesize: %ld bytes\n", filesize);
++	//debug("Filesize: %ld bytes\n", filesize);
+ 
+ 	if (pos >= filesize) {
+ 		debug("Read position past EOF: %lu\n", pos);
+@@ -342,7 +342,7 @@ get_contents(fsdata *mydata, dir_entry *dentptr, unsigned long pos,
+ 	if (maxsize > 0 && filesize > pos + maxsize)
+ 		filesize = pos + maxsize;
+ 
+-	debug("%ld bytes\n", filesize);
++	//debug("%ld bytes\n", filesize);
+ 
+ 	actsize = bytesperclust;
+ 
+@@ -915,8 +915,8 @@ do_fat_read_at(const char *filename, unsigned long pos, void *buffer,
+ 		int i;
+ 
+ 		if (j == 0) {
+-			debug("FAT read sect=%d, clust_size=%d, DIRENTSPERBLOCK=%zd\n",
+-				cursect, mydata->clust_size, DIRENTSPERBLOCK);
++			//debug("FAT read sect=%d, clust_size=%d, DIRENTSPERBLOCK=%zd\n",
++			//	cursect, mydata->clust_size, DIRENTSPERBLOCK);
+ 
+ 			if (disk_read(cursect,
+ 					(mydata->fatsize == 32) ?
+@@ -987,15 +987,15 @@ do_fat_read_at(const char *filename, unsigned long pos, void *buffer,
+ 						dentptr++;
+ 						continue;
+ 					}
+-					debug("Rootvfatname: |%s|\n",
+-					       l_name);
++					//debug("Rootvfatname: |%s|\n",
++					       //l_name);
+ 				} else {
+ 					/* Volume label or VFAT entry */
+ 					dentptr++;
+ 					continue;
+ 				}
+ 			} else if (dentptr->name[0] == 0) {
+-				debug("RootDentname == NULL - %d\n", i);
++				//debug("RootDentname == NULL - %d\n", i);
+ 				if (dols == LS_ROOT) {
+ 					printf("\n%d file(s), %d dir(s)\n\n",
+ 						files, dirs);
+@@ -1046,8 +1046,8 @@ do_fat_read_at(const char *filename, unsigned long pos, void *buffer,
+ 
+ 			if (strcmp(fnamecopy, s_name)
+ 			    && strcmp(fnamecopy, l_name)) {
+-				debug("RootMismatch: |%s|%s|\n", s_name,
+-				       l_name);
++				//debug("RootMismatch: |%s|%s|\n", s_name,
++				  //     l_name);
+ 				dentptr++;
+ 				continue;
+ 			}
+@@ -1055,16 +1055,16 @@ do_fat_read_at(const char *filename, unsigned long pos, void *buffer,
+ 			if (isdir && !(dentptr->attr & ATTR_DIR))
+ 				goto exit;
+ 
+-			debug("RootName: %s", s_name);
+-			debug(", start: 0x%x", START(dentptr));
+-			debug(", size:  0x%x %s\n",
+-			       FAT2CPU32(dentptr->size),
+-			       isdir ? "(DIR)" : "");
++			//debug("RootName: %s", s_name);
++			//debug(", start: 0x%x", START(dentptr));
++			//debug(", size:  0x%x %s\n",
++			  //     FAT2CPU32(dentptr->size),
++			    //   isdir ? "(DIR)" : "");
+ 
+ 			goto rootdir_done;	/* We got a match */
+ 		}
+-		debug("END LOOP: j=%d   clust_size=%d\n", j,
+-		       mydata->clust_size);
++		//debug("END LOOP: j=%d   clust_size=%d\n", j,
++		  //     mydata->clust_size);
+ 
+ 		/*
+ 		 * On FAT32 we must fetch the FAT entries for the next
+diff --git a/Bootloaders/u-boot/include/common.h b/Bootloaders/u-boot/include/common.h
+index d5020c8..db201ec 100644
+--- a/Bootloaders/u-boot/include/common.h
++++ b/Bootloaders/u-boot/include/common.h
+@@ -89,12 +89,14 @@ typedef volatile unsigned char	vu_char;
+ #ifdef __LP64__
+ #define CONFIG_SYS_SUPPORT_64BIT_DATA
+ #endif
+-
++#if 0
+ #ifdef DEBUG
+ #define _DEBUG	1
+ #else
+ #define _DEBUG	0
+ #endif
++#endif
++#define _DEBUG	1
+ 
+ /*
+  * Output a debug text when condition "cond" is met. The "cond" should be
+@@ -110,6 +112,8 @@ typedef volatile unsigned char	vu_char;
+ #define debug(fmt, args...)			\
+ 	debug_cond(_DEBUG, fmt, ##args)
+ 
++#define ENTER() debug("\n\n@@@ At Function [%s], File [%s] @@@@\n\n", __FUNCTION__, __FILE__)
++
+ /*
+  * An assertion is run-time check done in debug mode only. If DEBUG is not
+  * defined then it is skipped. If DEBUG is defined and the assertion fails,
+diff --git a/Bootloaders/u-boot/lib/hashtable.c b/Bootloaders/u-boot/lib/hashtable.c
+index 18ed590..ea8a739 100644
+--- a/Bootloaders/u-boot/lib/hashtable.c
++++ b/Bootloaders/u-boot/lib/hashtable.c
+@@ -883,12 +883,13 @@ int himport_r(struct hsearch_data *htab,
+ 				*dp++ = '\0';
+ 			*dp++ = '\0';	/* terminate name */
+ 
+-			debug("DELETE CANDIDATE: \"%s\"\n", name);
++			//debug("DELETE CANDIDATE: \"%s\"\n", name);
+ 			if (!drop_var_from_set(name, nvars, localvars))
+ 				continue;
+-
++#if 0
+ 			if (hdelete_r(name, htab, flag) == 0)
+ 				debug("DELETE ERROR ##############################\n");
++#endif
+ 
+ 			continue;
+ 		}
+@@ -922,9 +923,9 @@ int himport_r(struct hsearch_data *htab,
+ 			printf("himport_r: can't insert \"%s=%s\" into hash table\n",
+ 				name, value);
+ 
+-		debug("INSERT: table %p, filled %d/%d rv %p ==> name=\"%s\" value=\"%s\"\n",
+-			htab, htab->filled, htab->size,
+-			rv, name, value);
++		//debug("INSERT: table %p, filled %d/%d rv %p ==> name=\"%s\" value=\"%s\"\n",
++			//htab, htab->filled, htab->size,
++			//rv, name, value);
+ 	} while ((dp < data + size) && *dp);	/* size check needed for text */
+ 						/* without '\0' termination */
+ 	debug("INSERT: free(data = %p)\n", data);
+diff --git a/Bootloaders/u-boot/lib/initcall.c b/Bootloaders/u-boot/lib/initcall.c
+index 7597bad..9cd85c2 100644
+--- a/Bootloaders/u-boot/lib/initcall.c
++++ b/Bootloaders/u-boot/lib/initcall.c
+@@ -12,13 +12,15 @@ DECLARE_GLOBAL_DATA_PTR;
+ int initcall_run_list(const init_fnc_t init_sequence[])
+ {
+ 	const init_fnc_t *init_fnc_ptr;
++	ENTER();
++	printf("\nRun list of initialization functions\n");
+ 
+ 	for (init_fnc_ptr = init_sequence; *init_fnc_ptr; ++init_fnc_ptr) {
+ 		unsigned long reloc_ofs = 0;
+ 
+ 		if (gd->flags & GD_FLG_RELOC)
+ 			reloc_ofs = gd->reloc_off;
+-		debug("initcall: %p\n", (char *)*init_fnc_ptr - reloc_ofs);
++		//debug("initcall: %p\n", (char *)*init_fnc_ptr - reloc_ofs);
+ 		if ((*init_fnc_ptr)()) {
+ 			printf("initcall sequence %p failed at call %p\n",
+ 			       init_sequence,
+-- 
+1.7.10
+

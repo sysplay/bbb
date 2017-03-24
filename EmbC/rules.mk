@@ -1,18 +1,20 @@
-CROSS_COMPILE = arm-linux-gnueabihf-
+CROSS_COMPILE := arm-linux-gnueabihf-
 
-CC = ${CROSS_COMPILE}gcc
-AS = ${CROSS_COMPILE}as
-LD = ${CROSS_COMPILE}ld
-OBJCOPY = ${CROSS_COMPILE}objcopy
-OBJDUMP = ${CROSS_COMPILE}objdump
+CC := ${CROSS_COMPILE}gcc
+AS := ${CROSS_COMPILE}as
+LD := ${CROSS_COMPILE}ld
+OBJCOPY := ${CROSS_COMPILE}objcopy
+OBJDUMP := ${CROSS_COMPILE}objdump
 
 #OPTIMIZATION_FLAGS = -O2
-CFLAGS = -mcpu=cortex-a8 ${OPTIMIZATION_FLAGS}
-#CFLAGS = -mcpu=cortex-a8 -mfpu=neon ${OPTIMIZATION_FLAGS}
-ASFLAGS = -mcpu=cortex-a8
-#ASFLAGS = -mcpu=cortex-a8 -mfpu=neon
+CFLAGS := -mcpu=cortex-a8
+#CFLAGS += -mfpu=neon
+CFLAGS += ${OPTIMIZATION_FLAGS}
+ASFLAGS := -mcpu=cortex-a8
+#ASFLAGS += -mfpu=neon
 #LDFLAGS = -T first.lds
 LDFLAGS = -T linker.lds
+LDFLAGS += -Map=$*.map
 
 TARGET ?= code
 
@@ -39,4 +41,4 @@ view: ${TARGET}_disasm
 	${OBJDUMP} -d $<
 
 clean:
-	${RM} *.bin *.elf *.o
+	${RM} *.bin *.map *.elf *.o

@@ -157,5 +157,5 @@ static void __exit wqt_exit(void)
 module_init(wqt_init);
 module_exit(wqt_exit);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Wait Queue Thunder Demo");

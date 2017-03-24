@@ -1,0 +1,39 @@
+CONFIGFS_HOME=/root/configfs
+
+GADGET_NAME=g1
+#VID=0x16c0
+#PID=0x05dc
+LANG=0x409 # en
+#SNO=0x123456789ABCDEF
+#MFG="SysPlay eLearning Academy for You"
+#PRODUCT="Device Creation Kit"
+#CFG="Default"
+#MAX_PWR=300
+FUNC=ncm # usb_f_${FUNC}.ko gets loaded
+INSTANCE=usb0
+#UDC_NAME=musb-hdrc.0.auto # /sys/class/udc/*
+
+if [ ! -d ${CONFIGFS_HOME}/usb_gadget/${GADGET_NAME} ]
+then
+	echo "Gadget device ${GADGET_NAME} doesn't exist"
+	exit
+fi
+
+cd ${CONFIGFS_HOME}/usb_gadget/${GADGET_NAME}
+
+echo "" > UDC
+
+rm -f configs/c.1/${FUNC}.${INSTANCE}
+rmdir configs/c.1/strings/${LANG}
+rmdir configs/c.1
+
+rmdir functions/${FUNC}.${INSTANCE}
+
+rmdir strings/${LANG}
+
+cd ..
+
+rmdir ${CONFIGFS_HOME}/usb_gadget/${GADGET_NAME}
+
+#umount ${CONFIGFS_HOME}
+#rmdir ${CONFIGFS_HOME}

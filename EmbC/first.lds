@@ -3,9 +3,21 @@
 SECTIONS
 {
 	. = 0x402F0400;
-	.text : { /* first_startup.o(RESET_VECTOR) */ *(.text) }
+	.text :
+	{
+		/* first_startup.o(RESET_VECTOR) */
+		*(.text)
+	}
 	.data : { *(.data) }
-	.bss : { *(.bss) }
+	.bss :
+	{
+		/* bss_begin = .; */
+		*(.bss)
+		/*
+		. = ALIGN(4);
+		bss_end = .;
+		 */
+	}
 	/*
 	. = ALIGN(8);
 	. = . + 0x1000;

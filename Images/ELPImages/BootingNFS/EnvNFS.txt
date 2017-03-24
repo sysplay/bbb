@@ -1,0 +1,4 @@
+serverip=192.168.20.170
+ipaddr=192.168.20.230
+nfsargs= setenv bootargs mpurate=${mpurate} console=${console} vram=${vram} nfsroot=192.168.20.1:/home/user/tftpboot/target,nolock,rsize=1024,wsize=1024 ip=192.168.20.230:192.168.20.1
+uenvcmd=run nfsargs;mmc rescan; tftpboot 0x81000000 am335x-boneblack.dtb; tftpboot 0x80200000 uImage-bbb; bootm 0x80200000 - 0x81000000;

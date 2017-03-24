@@ -92,5 +92,5 @@ module_init(spinlock_init);
 module_exit(spinlock_cleanup);
 
 MODULE_LICENSE("GPL"); 
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Spin Lock Demo");

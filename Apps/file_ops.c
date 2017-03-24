@@ -3,18 +3,36 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include <linux/ioctl.h>
+#include <sys/ioctl.h>
 
-//#include "../CharDriver/led_ioctl.h"
+//#define MEM_IOCTL 1
 
-main()
+#ifdef MEM_IOCTL
+#include "mem_ioctl.h"
+#endif
+
+int main(int argc, char *argv[])
 {
+	char *file_name;
 	int choice;
 	int fd = -1;
 	unsigned char data[128];
 	int cnt;
 	int i;
-	int delay;
+	off_t seek;
+#ifdef MEM_IOCTL
+	int size;
+#endif
+
+	if (argc != 2)
+	{
+		fprintf(stderr, "Usage: %s <device file name>\n", argv[0]);
+		return 1;
+	}
+	else
+	{
+		file_name = argv[1];
+	}
 
 	do
 	{
@@ -22,7 +40,11 @@ main()
 		printf("2: Read\n");
 		printf("3: Write\n");
 		printf("4: Close\n");
-		printf("5: Ioctl\n");
+		printf("5: Seek\n");
+#ifdef MEM_IOCTL
+		printf("6: Store Size Set\n");
+		printf("7: Store Size Get\n");
+#endif
 		printf("0: Exit\n");
 		printf("Enter choice: ");
 		scanf("%d", &choice);
@@ -30,10 +52,10 @@ main()
 		switch (choice)
 		{
 			case 1:
-				fd = open("/dev/mychar0", O_RDWR);
+				fd = open(file_name, O_RDWR);
 				if (fd == -1)
 				{
-					perror("file_app open");
+					perror("file_ops open");
 				}
 				break;
 			case 2:
@@ -48,13 +70,13 @@ main()
 				cnt = read(fd, data, cnt);
 				if (cnt == -1)
 				{
-					perror("file_app read");
+					perror("file_ops read");
 					break;
 				}
 				printf("Read %d bytes in %p: ", cnt, data);
 				for (i = 0; i < cnt; i++)
 				{
-					printf("%02X", data[i]);
+					printf("%c (%02X) ", data[i], data[i]);
 				}
 				printf("\n");
 				break;
@@ -70,7 +92,7 @@ main()
 				cnt = write(fd, data, strlen(data));
 				if (cnt == -1)
 				{
-					perror("file_app write");
+					perror("file_ops write");
 					break;
 				}
 				printf("Wrote %d bytes from %p\n", cnt, data);
@@ -81,24 +103,52 @@ main()
 					printf("File not open\n");
 					break;
 				}
-				close (fd);
+				close(fd);
 				fd = -1;
 				break;
-#if 0
 			case 5:
 				if (fd == -1)
 				{
 					printf("File not open\n");
 					break;
 				}
-				printf("Enter the delay in ms: ");
-				scanf("%d", &delay);
+				printf("Enter the seek from start of device file: ");
+				scanf("%lld", &seek);
 				getchar();
-				if (ioctl(fd, LED_SET_CHAR_DELAY, delay) == -1)
+				if (lseek(fd, seek, SEEK_SET) == -1)
 				{
-					perror("file_app ioctl");
+					perror("file_ops lseek");
 					break;
 				}
+				break;
+#ifdef MEM_IOCTL
+			case 6:
+				if (fd == -1)
+				{
+					printf("File not open\n");
+					break;
+				}
+				printf("Enter the store size: ");
+				scanf("%d", &size);
+				getchar();
+				if (ioctl(fd, MEM_SET_STORE_SIZE, size) == -1)
+				{
+					perror("file_ops ioctl");
+					break;
+				}
+				break;
+			case 7:
+				if (fd == -1)
+				{
+					printf("File not open\n");
+					break;
+				}
+				if (ioctl(fd, MEM_GET_STORE_SIZE, &size) == -1)
+				{
+					perror("file_ops ioctl");
+					break;
+				}
+				printf("Current store size: %d\n", size);
 				break;
 #endif
 		}

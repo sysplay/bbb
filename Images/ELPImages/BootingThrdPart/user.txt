@@ -1,0 +1,5 @@
+mmcroot=/dev/mmcblk0p3 rw;
+mmcrootfstype=ext2 rootwait;
+uenvcmd=run loaduimage;run loadfdt; run mmcargs; bootz ${loadaddr} - ${fdtaddr};
+loadfdt=ext2load mmc ${mmcdev}:3 ${fdtaddr} /boot/dtbs/${fdtfile};
+loaduimage=ext2load mmc 0:3 ${loadaddr} /boot/zImage;

@@ -1,0 +1,38 @@
+#!/bin/bash
+if [ "`lsmod | grep g_ether`" != "" ]; then exit 0; fi
+
+#depmod
+
+mac_addr=/proc/device-tree/ocp/ethernet@4a100000/slave@4a100300/mac-address
+eeprom=/sys/bus/i2c/devices/0-0050/eeprom
+
+DEV_ADDR=$(perl -e 'print join(":",unpack("(H2)*",<>))' ${mac_addr})
+VERSION=$(perl -e '@x=unpack("A12A4",<>); print $x[1]' ${eeprom})
+#SERIAL_NUMBER=$(perl -e '@x=unpack("A16A12",<>); print $x[1]' ${eeprom})
+#ISBLACK=$(perl -e '@x=unpack("A20A4",<>); print $x[1]' ${eeprom})
+SERIAL_NUMBER=$(hexdump -e '8/1 "%c"' ${eeprom} -s 14 -n 2)-$(hexdump -e '8/1 "%c"' ${eeprom} -s 16 -n 12)
+ISBLACK=$(hexdump -e '8/1 "%c"' ${eeprom} -s 8 -n 4)
+
+BLACK=""
+if [ "${ISBLACK}" = "BBBK" ] ; then
+	BLACK="Black"
+fi
+if [ "${ISBLACK}" = "BNLT" ] ; then
+	BLACK="Black"
+fi
+
+#modprobe usb_f_rndis
+modprobe u_ether
+insmod g_ether.ko iSerialNumber=${SERIAL_NUMBER} iManufacturer=Circuitco iProduct=BeagleBone${BLACK} host_addr=${DEV_ADDR}
+
+# Create /etc/udhcpd.conf
+#start      192.168.7.1
+#end        192.168.7.1
+#interface  usb0
+#max_leases 1
+#option subnet 255.255.255.252
+
+sleep 1
+
+ifup usb0
+/etc/init.d/udhcpd start

@@ -174,5 +174,5 @@ static void __exit cleanup_consprod(void)
 module_init(init_consprod);
 module_exit(cleanup_consprod);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Consumer Producer Demo");

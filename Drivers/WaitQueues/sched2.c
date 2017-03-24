@@ -143,5 +143,5 @@ module_init(schd_init);
 module_exit(schd_cleanup);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Waiting Process Demo");

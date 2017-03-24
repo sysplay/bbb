@@ -177,6 +177,6 @@ void cleanup_gpio(void)
 module_init(init_gpio);
 module_exit(cleanup_gpio);
 
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("BeagleBone Black GPIO Driver");

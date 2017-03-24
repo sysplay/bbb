@@ -139,5 +139,5 @@ void semdemo_cleanup(void)
 module_init(semdemo_init);
 module_exit(semdemo_cleanup);
 MODULE_LICENSE("GPL");   
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Semaphore Demo");

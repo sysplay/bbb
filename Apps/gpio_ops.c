@@ -3,86 +3,93 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include "gpio_ioctl.h"
+#include <sys/ioctl.h>
 
+#include "gpio.h"
 
-main()
+int main(int argc, char *argv[])
 {
+	char *filename;
+	int fd;
 	int choice;
-	int fd = -1;
-	unsigned char c;
-	int cnt = 1;
-	int i;
-	int led_num;
+	LEDData ld = { .num = 3 };
+	GPIOData gd = { .num = 72 };
+
+	if (argc != 2)
+	{
+		printf("Usage: %s <device_file_name>\n", argv[0]);
+		return 1;
+	}
+	else
+	{
+		filename = argv[1];
+	}
+
+	fd = open(filename, O_RDWR);
+	if (fd == -1)
+	{
+		perror("gpio_ops open");
+		return 1;
+	}
 
 	do
 	{
-		printf("1: Open\n");
-		printf("2: Get Led Status\n");
-		printf("3: Set Led Status\n");
-		printf("4: Set Led Number\n");
-		printf("5: Close\n");
-		printf("0: Exit\n");
+		printf(" 0: Exit\n");
+		printf(" 1: Get LED %d Status from BBB\n", ld.num);
+		printf(" 2: Switch on LED %d of BBB\n", ld.num);
+		printf(" 3: Switch off LED %d of BBB\n", ld.num);
+		printf(" 4: Change LED selection of BBB\n");
+		printf(" 5: Read button of BBB\n");
 		printf("Enter choice: ");
 		scanf("%d", &choice);
 		getchar();
 		switch (choice)
 		{
-			case 0: 
-				break;
 			case 1:
-				fd = open("/dev/gpio_drv0", O_RDWR);
-				if (fd == -1)
+				if (ioctl(fd, BBB_LED_GET, &ld) == -1)
 				{
-					perror("file_app open");
+					perror("gpio_ops ioctl");
+					break;
 				}
+				printf(" LED is %s\n", (ld.val == 0) ? "Off" : "On");
 				break;
 			case 2:
-				if (fd == -1)
+				printf(" Switching On LED ... ");
+				ld.val = 1;
+				if (ioctl(fd, BBB_LED_SET, &ld) == -1)
 				{
-					printf("File not open\n");
+					perror("gpio_ops ioctl");
+					printf("failed\n");
 					break;
 				}
-				cnt = read(fd, &c, 1);
-				if (cnt < 0)
-				{
-					printf("Can't get the status");
-				}
-				else
-				{
-					printf("\nGpio Value is %d", c);
-				}
-				printf("\n");
+				printf("done\n");
 				break;
 			case 3:
-				if (fd == -1)
+				printf(" Switching Off LED ... ");
+				ld.val = 0;
+				if (ioctl(fd, BBB_LED_SET, &ld) == -1)
 				{
-					printf("File not open\n");
+					perror("gpio_ops ioctl");
+					printf("failed\n");
 					break;
 				}
-				printf("Enter your choice [0 - Turn Off, 1- Turn On] :\n");
-				c = getchar();
-				cnt = write( fd, &c, 1 );
-				if (cnt == -1)
-				{
-					perror("file_app write");
-					break;
-				}
+				printf("done\n");
 				break;
 			case 4:
-				printf("Enter the Led Number (1 to 4): ");
-				scanf("%d", &led_num);
-				getchar();
-				if (ioctl(fd, GPIO_SELECT_LED, led_num) == -1)
+				printf("Enter LED to select [0-3]: ");
+				scanf("%d", &ld.num);
+				break;
+			case 5:
+				if (ioctl(fd, BBB_GPIO_GET, &gd) == -1)
 				{
-					perror("led_ops ioctl");
+					perror("gpio_ops ioctl");
 					break;
 				}
+				printf(" Switch is %s\n", (gd.val == 0) ? "Pressed" : "Released");
 				break;
-			default:
-				printf("Invalid Choice\n");
 		}
 	} while (choice != 0);
 
+	close (fd);
 	return 0;
 }

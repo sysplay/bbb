@@ -18,21 +18,29 @@ Description of the various folders:
 Brief about the various workshops conducted @ SysPlay (https://sysplay.in)
 
 + Embedded C & Firmware Development (ECFD)
-	> Info Link: https://sysplay.in/index.php?pagefile=ecfd_weekend_workshop
-	> Directories Used: Toolchain, Docs, EmbC
+	- Info Link: https://sysplay.in/index.php?pagefile=ecfd_weekend_workshop
+	- Directories Used: Toolchain, Docs, EmbC
 
 + Building Embedded Linux System (BELS)
-	> Info Link: https://sysplay.in/index.php?pagefile=bels_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS
+	- Info Link: https://sysplay.in/index.php?pagefile=bels_weekend_workshop
+	- Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS
 
 + Embedded Linux Porting Advanced (ELPA)
-	> Info Link: https://sysplay.in/index.php?pagefile=elpa_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS, Drivers, Apps
+	- Info Link: https://sysplay.in/index.php?pagefile=elpa_weekend_workshop
+	- Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS, Drivers, Apps
 
 + Embedded Linux Kernel Internals (ELKI)
-	> Info Link: https://sysplay.in/index.php?pagefile=elki_weekend_workshop
-	> Directories Used: Toolchain, Docs, Images, Original, Kernel, Drivers, Apps
+	- Info Link: https://sysplay.in/index.php?pagefile=elki_weekend_workshop
+	- Directories Used: Toolchain, Docs, Images, Original, Kernel, Drivers, Apps
+
++ Embedded Periperhal Interfacing Drivers (EPID)
+	- Info Link: https://sysplay.in/index.php?pagefile=epid_weekend_workshop
+	- Directories Used: Toolchain, Docs, Images, Original, Kernel, Drivers, Apps
+
++ Creating USB Devices (CUD)
+	- Info Link: https://sysplay.in/index.php?pagefile=cud_weekend_workshop
+	- Directories Used: Toolchain, Docs, Original, Kernel, Drivers, Apps
 
 + Linux Kernel & Drivers Debugging (LKDD)
-	> Info Link: https://sysplay.in/index.php?pagefile=lkdd_weekend_workshop
-	> Directories Used: Toolchain, Docs, Original, Kernel, Drivers, Apps
+	- Info Link: https://sysplay.in/index.php?pagefile=lkdd_weekend_workshop
+	- Directories Used: Toolchain, Docs, Original, Kernel, Drivers, Apps

@@ -39,5 +39,5 @@ module_init(debug_init);
 module_exit(debug_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Anil Kumar Pugalia <anil@sysplay.in>");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Timer Debug Driver");

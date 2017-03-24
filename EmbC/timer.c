@@ -1,6 +1,8 @@
 #include "bbb.h"
-#include "interrupt.h"
 #include "timer.h"
+#ifdef INTR_BASED_TIMER
+#include "interrupt.h"
+#endif
 
 void timer_init(uint32_t msecs)
 {
@@ -22,7 +24,7 @@ void timer_shut(void)
 	TIMER0_IRQENABLE_CLR = (1 << 1);
 }
 
-#ifdef INTR_BASED
+#ifdef INTR_BASED_TIMER
 void timer_handler_register(void (*handler)(void))
 {
 	interrupt_handler_register(TIMER0_IRQ, handler);

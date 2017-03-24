@@ -79,7 +79,7 @@ static int __init fcd_init(void)
 		unregister_chrdev_region(dev, MINOR_CNT);
 		return PTR_ERR(cl);
 	}
-	if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "mychar%d", FIRST_MINOR)))
+	if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "finalchar%d", FIRST_MINOR)))
 	{
 		class_destroy(cl);
 		cdev_del(&c_dev);
@@ -102,5 +102,5 @@ module_init(fcd_init);
 module_exit(fcd_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Sysplay Workshops");
-MODULE_DESCRIPTION("A Character Driver");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
+MODULE_DESCRIPTION("Final Character Driver Template");

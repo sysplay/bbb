@@ -1,6 +1,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/kthread.h>
+#include <linux/signal.h>
 #include <linux/delay.h>
 
 static struct task_struct *thread_st;
@@ -42,6 +43,10 @@ static void __exit cleanup_thread(void)
 		printk(KERN_INFO "Thread stopped");
 	}
 }
-MODULE_LICENSE("GPL");
+
 module_init(init_thread);
 module_exit(cleanup_thread);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
+MODULE_DESCRIPTION("Thread Complete Demo");

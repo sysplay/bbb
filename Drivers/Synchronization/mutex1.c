@@ -75,5 +75,5 @@ static void __exit cleanup_thread(void)
 module_init(init_thread);
 module_exit(cleanup_thread);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Concurreny issue demo");

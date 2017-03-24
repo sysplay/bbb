@@ -1,0 +1,7 @@
+#BASE=/sys/devices/leds.4
+BASE=/sys/class
+
+echo none > ${BASE}/leds/beaglebone\:blue\:heartbeat/trigger
+echo none > ${BASE}/leds/beaglebone\:blue\:mmc0/trigger
+echo none > ${BASE}/leds/beaglebone\:blue\:usr2/trigger
+echo none > ${BASE}/leds/beaglebone\:blue\:usr3/trigger

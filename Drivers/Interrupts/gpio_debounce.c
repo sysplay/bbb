@@ -168,5 +168,5 @@ static void __exit cleanup_gpio(void)
 module_init(init_gpio);
 module_exit(cleanup_gpio);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("GPIO Debounce Demo");

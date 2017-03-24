@@ -108,5 +108,5 @@ module_init(mwait_init);
 module_exit(mwait_cleanup);
 
 MODULE_LICENSE("GPL");   
-MODULE_AUTHOR("Pradeep");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Manual Wait Demo");

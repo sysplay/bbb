@@ -56,5 +56,5 @@ module_init(kretprobe_init);
 module_exit(kretprobe_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Anil Kumar Pugalia <anil@sysplay.in>");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("KProbe Demo Driver");

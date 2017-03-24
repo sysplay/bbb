@@ -139,5 +139,5 @@ module_init(proc_win_init);
 module_exit(proc_win_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Anil Kumar Pugalia <email@sarika-pugs.com>");
+MODULE_AUTHOR("SysPlay Workshops <workshop@sysplay.in>");
 MODULE_DESCRIPTION("Kernel window /proc Demonstration Driver");

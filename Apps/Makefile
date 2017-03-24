@@ -7,5 +7,8 @@ TGTS := $(SRCS:.c=)
 
 all: ${TGTS}
 
+thread_unsafe: thread_unsafe.c
+	${CC} -g $^ -o $@ -lpthread
+
 clean:
 	${RM} ${TGTS}

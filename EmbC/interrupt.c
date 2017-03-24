@@ -78,7 +78,8 @@ void __attribute__((interrupt("IRQ"))) interrupt_vector(void)
 }
 void __attribute__((interrupt("FIQ"))) fast_interrupt_vector(void)
 {
-	/* Right now, do Nothing! */
+	/* Do Nothing as not supported on BBB! */
+
 	mb(); // Data Sync Barrier, Or
 	// TODO: Data Sync Barrier
 	// MOV R0, #0
@@ -185,10 +186,12 @@ void interrupt_disable(uint8_t irq)
 void interrupt_handler_register(uint8_t irq, void (*handler)(void))
 {
 	ivt[irq] = handler;
+	INTC_ILR(irq) = (0 << 2) | (0 << 0);
 	interrupt_enable(irq);
 }
 void interrupt_handler_unregister(uint8_t irq)
 {
 	interrupt_disable(irq);
+	INTC_ILR(irq) = 0;
 	ivt[irq] = NULL;
 }

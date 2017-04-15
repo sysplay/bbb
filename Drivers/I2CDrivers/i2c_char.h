@@ -195,6 +195,9 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop);
 int omap_i2c_wait_for_bb(struct omap_i2c_dev *dev);
 int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop);
 u16 wait_for_event(struct omap_i2c_dev *dev);
+int i2c_xfer_msg(struct omap_i2c_dev *dev,
+			     struct i2c_msg *msg, int stop);
+void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx);
 
 void omap_i2c_write_reg(struct omap_i2c_dev *i2c_dev, int reg, u16 val);
 u16 omap_i2c_read_reg(struct omap_i2c_dev *i2c_dev, int reg);

@@ -122,7 +122,7 @@ int omap_i2c_reset(struct omap_i2c_dev *dev)
 	return 0;
 }
 
-static int omap_i2c_init(struct omap_i2c_dev *dev)
+int omap_i2c_init(struct omap_i2c_dev *dev)
 {
 	u16 psc = 0, scll = 0, sclh = 0;
 	u16 fsscll = 0, fssclh = 0, hsscll = 0, hssclh = 0;
@@ -214,7 +214,7 @@ int omap_i2c_wait_for_bb(struct omap_i2c_dev *dev)
 	return 0;
 }
 
-static void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
+void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 {
 	u16		buf;
 
@@ -721,8 +721,8 @@ omap_i2c_probe(struct platform_device *pdev)
 	}
 
 	/* Char interface related initialization */
-	dev->i2c_class = i2c_class;
-	fcd_init(dev);
+//	dev->i2c_class = i2c_class;
+//	fcd_init(dev);
 
 	return 0;
 
@@ -735,7 +735,7 @@ static int omap_i2c_remove(struct platform_device *pdev)
 {
 	struct omap_i2c_dev *dev = platform_get_drvdata(pdev);
 
-	fcd_exit(dev);
+	//fcd_exit(dev);
 
 	i2c_del_adapter(&dev->adapter);
 

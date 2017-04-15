@@ -100,7 +100,7 @@ void flush_fifo(struct omap_i2c_dev *dev)
 	}
 }
 
-static void __omap_i2c_init(struct omap_i2c_dev *dev)
+void __omap_i2c_init(struct omap_i2c_dev *dev)
 {
 
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, 0);
@@ -209,7 +209,7 @@ static void omap_i2c_set_speed(struct omap_i2c_dev *dev)
 	dev->sclhstate = sclh;
 }
 
-static int omap_i2c_init(struct omap_i2c_dev *dev)
+int omap_i2c_init(struct omap_i2c_dev *dev)
 {
 	omap_i2c_set_speed(dev);
 	dev->iestate = 0;
@@ -223,7 +223,7 @@ static int omap_i2c_init(struct omap_i2c_dev *dev)
 	return 0;
 }
 
-static void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
+void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 {
 	u16 buf;
 

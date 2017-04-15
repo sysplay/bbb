@@ -130,20 +130,17 @@ wr_exit:
 	return 0;
 }
 
-
-
 /*
  * Low level master read/write transaction.
  */
-static int omap_i2c_xfer_msg(struct omap_i2c_dev *dev,
+int i2c_xfer_msg(struct omap_i2c_dev *dev,
 			     struct i2c_msg *msg, int stop)
 {
-	//struct omap_i2c_dev *dev = i2c_get_adapdata(adap);
 	unsigned long timeout;
 	u16 w;
 
-	//printk("addr: 0x%04x, len: %d, flags: 0x%x, stop: %d\n",
-		//msg->addr, msg->len, msg->flags, stop);
+	printk("###addr: 0x%04x, len: %d, flags: 0x%x, stop: %d ###\n",
+		msg->addr, msg->len, msg->flags, stop);
 
 	if (msg->len == 0)
 		return -EINVAL;
@@ -153,7 +150,6 @@ static int omap_i2c_xfer_msg(struct omap_i2c_dev *dev,
 
 	omap_i2c_write_reg(dev, OMAP_I2C_SA_REG, msg->addr);
 
-	/* REVISIT: Could the STB bit of I2C_CON be used with probing? */
 	dev->buf = msg->buf;
 	dev->buf_len = msg->len;
 
@@ -167,7 +163,6 @@ static int omap_i2c_xfer_msg(struct omap_i2c_dev *dev,
 	w |= OMAP_I2C_BUF_RXFIF_CLR | OMAP_I2C_BUF_TXFIF_CLR;
 	omap_i2c_write_reg(dev, OMAP_I2C_BUF_REG, w);
 	w = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
-	//printk("Stat reg = 0x%04x\n", w);
 
 	INIT_COMPLETION(dev->cmd_complete);
 	dev->cmd_err = 0;
@@ -176,7 +171,7 @@ static int omap_i2c_xfer_msg(struct omap_i2c_dev *dev,
 
 	if (!(msg->flags & I2C_M_RD))
 		w |= OMAP_I2C_CON_TRX;
-
+	printk("#### Initiatiate the I2C transaction ####\n");
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
 
 	/*
@@ -187,17 +182,19 @@ static int omap_i2c_xfer_msg(struct omap_i2c_dev *dev,
 						OMAP_I2C_TIMEOUT);
 	if (timeout == 0) {
 		dev_err(dev->dev, "controller timed out\n");
+		printk("Controller Timed Out\n");
 		omap_i2c_reset(dev);
 		__omap_i2c_init(dev);
 		return -ETIMEDOUT;
 	}
-
+	/* Returns 1 if command was transferred without any error */
 	if (likely(!dev->cmd_err))
-		return 0;
+		return 1;
 
 	/* We have an error */
 	if (dev->cmd_err & (OMAP_I2C_STAT_AL | OMAP_I2C_STAT_ROVR |
 			    OMAP_I2C_STAT_XUDF)) {
+		printk("#### ERROR in Transfer ####\n");
 		omap_i2c_reset(dev);
 		__omap_i2c_init(dev);
 		return -EIO;
@@ -205,7 +202,8 @@ static int omap_i2c_xfer_msg(struct omap_i2c_dev *dev,
 
 	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
 		if (msg->flags & I2C_M_IGNORE_NAK)
-			return 0;
+			return 1;
+		printk("#### NAK from the receiver ####\n");
 
 		w = omap_i2c_read_reg(dev, OMAP_I2C_CON_REG);
 		w |= OMAP_I2C_CON_STP;

@@ -43,6 +43,7 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/spinlock.h>
+#include <linux/interrupt.h>
 #include <asm/uaccess.h>
 #include "i2c_char.h"
 
@@ -100,7 +101,7 @@ void flush_fifo(struct omap_i2c_dev *dev)
 	}
 }
 
-static void __omap_i2c_init(struct omap_i2c_dev *dev)
+void __omap_i2c_init(struct omap_i2c_dev *dev)
 {
 
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, 0);
@@ -255,7 +256,7 @@ int omap_i2c_init(struct omap_i2c_dev *dev)
 	return 0;
 }
 
-static void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
+void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 {
 	u16 buf;
 
@@ -291,6 +292,7 @@ static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
 		bool is_xdr)
 {
 	u16		w;
+	ENTER();
 
 	while (num_bytes--) {
 		w = *dev->buf++;
@@ -315,6 +317,7 @@ static void omap_i2c_receive_data(struct omap_i2c_dev *dev, u8 num_bytes,
 		bool is_rdr)
 {
 	u16		w;
+	ENTER();
 
 	while (num_bytes--) {
 		w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
@@ -578,6 +581,7 @@ omap_i2c_isr(int irq, void *dev_id)
 	irqreturn_t ret = IRQ_HANDLED;
 	u16 mask;
 	u16 stat;
+	printk("### In ISR ###\n");
 
 	spin_lock(&dev->lock);
 	mask = omap_i2c_read_reg(dev, OMAP_I2C_IE_REG);
@@ -591,6 +595,14 @@ omap_i2c_isr(int irq, void *dev_id)
 	return ret;
 }
 
+static inline void
+omap_i2c_complete_cmd(struct omap_i2c_dev *dev, u16 err)
+{
+	printk("### In completion err = %x ###\n", err);
+	dev->cmd_err |= err;
+	complete(&dev->cmd_complete);
+}
+
 static irqreturn_t
 omap_i2c_isr_thread(int this_irq, void *dev_id)
 {
@@ -599,6 +611,7 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
 	u16 bits;
 	u16 stat;
 	int err = 0, count = 0;
+	printk("#### In ISR Thread ####\n");
 
 	spin_lock_irqsave(&dev->lock, flags);
 	do {
@@ -655,6 +668,7 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
 
 		if (stat & OMAP_I2C_STAT_RDR) {
 			u8 num_bytes = 1;
+			printk("### Got RDR ####\n");
 
 			if (dev->fifo_size)
 				num_bytes = dev->buf_len;
@@ -668,6 +682,7 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
 		if (stat & OMAP_I2C_STAT_RRDY) {
 			u8 num_bytes = 1;
 
+			printk("### Got RRDY ####\n");
 			if (dev->threshold)
 				num_bytes = dev->threshold;
 
@@ -679,6 +694,7 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
 		if (stat & OMAP_I2C_STAT_XDR) {
 			u8 num_bytes = 1;
 			int ret;
+			printk("### Got XDR ####\n");
 
 			if (dev->fifo_size)
 				num_bytes = dev->buf_len;
@@ -694,6 +710,7 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
 		if (stat & OMAP_I2C_STAT_XRDY) {
 			u8 num_bytes = 1;
 			int ret;
+			printk("### Got XRDY ####\n");
 
 			if (dev->threshold)
 				num_bytes = dev->threshold;
@@ -707,14 +724,14 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
 		}
 
 		if (stat & OMAP_I2C_STAT_ROVR) {
-			//printk("Receive overrun\n");
+			printk("### Got Overrun ####\n");
 			err |= OMAP_I2C_STAT_ROVR;
 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ROVR);
 			break;
 		}
 
 		if (stat & OMAP_I2C_STAT_XUDF) {
-			//printk("Transmit Underflow\n");
+			printk("### Got underrun ####\n");
 			err |= OMAP_I2C_STAT_XUDF;
 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XUDF);
 			break;
@@ -857,7 +874,7 @@ static struct platform_driver omap_i2c_driver = {
 };
 
 /* I2C may be needed to bring up other drivers */
-static int __init omap_i2c_init_driver(void)
+int __init omap_i2c_init_driver(void)
 {
 	if ((i2c_class = class_create(THIS_MODULE, "i2cdrv")) == NULL)
 	{

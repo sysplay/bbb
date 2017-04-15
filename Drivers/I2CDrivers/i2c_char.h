@@ -9,6 +9,7 @@
 
 /* timeout waiting for the controller to respond */
 #define OMAP_I2C_TIMEOUT (msecs_to_jiffies(1000))
+#define ENTER() printk("\n###### In %s######\n", __func__);
 
 
 /* For OMAP3 I2C_IV has changed to I2C_WE (wakeup enable) */
@@ -199,6 +200,9 @@ void omap_i2c_write_reg(struct omap_i2c_dev *i2c_dev, int reg, u16 val);
 u16 omap_i2c_read_reg(struct omap_i2c_dev *i2c_dev, int reg);
 void omap_i2c_ack_stat(struct omap_i2c_dev *dev, u16 stat);
 void flush_fifo(struct omap_i2c_dev *dev);
+void __omap_i2c_init(struct omap_i2c_dev *dev);
+int omap_i2c_init(struct omap_i2c_dev *dev);
+int omap_i2c_reset(struct omap_i2c_dev *dev);
 
 /* Test Functions */
 int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *i2c_msg, size_t len);

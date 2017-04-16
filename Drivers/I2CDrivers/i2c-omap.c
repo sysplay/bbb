@@ -238,7 +238,7 @@ void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 	 */
 
 	dev->threshold = clamp(size, (u8) 1, dev->fifo_size);
-	printk("thr = %d\n", dev->threshold);
+	printk("@@@@ thr = %d @@@@\n", dev->threshold);
 
 	buf = omap_i2c_read_reg(dev, OMAP_I2C_BUF_REG);
 
@@ -337,7 +337,7 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev,
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
 	while (k--) {
 		status = wait_for_event(dev);
-		printk("status = %x\n", status);
+		printk("@@@@ Status = %x @@@@\n", status);
 		if (status & OMAP_I2C_STAT_XDR) {
 			u8 num_bytes = 1;
 			int ret;
@@ -345,7 +345,7 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev,
 			if (dev->fifo_size)
 				num_bytes = dev->buf_len;
 
-			printk("Transmitting XDR\n");
+			printk("@@@@ Transmitting XDR @@@@\n");
 			ret = omap_i2c_transmit_data(dev, num_bytes, true);
 			if (ret < 0)
 				break;
@@ -357,7 +357,7 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev,
 			u8 num_bytes = 1;
 			int ret;
 
-			printk("Transmitting XRDY\n");
+			printk("@@@@ Transmitting XRDY @@@@\n");
 			if (dev->threshold)
 				num_bytes = dev->threshold;
 
@@ -431,7 +431,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
 	while (k--) {
 		status = wait_for_event(dev);
-		printk("status = %x\n", status);
+		printk("@@@@ Status = %x @@@@@\n", status);
 		if (status & OMAP_I2C_STAT_XDR) {
 			u8 num_bytes = 1;
 			int ret;
@@ -439,7 +439,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 			if (dev->fifo_size)
 				num_bytes = dev->buf_len;
 
-			printk("Transmitting XDR\n");
+			printk("@@@@ Transmitting XDR @@@@\n");
 			ret = omap_i2c_transmit_data(dev, num_bytes, true);
 			if (ret < 0)
 				break;
@@ -451,7 +451,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 			u8 num_bytes = 1;
 			int ret;
 
-			printk("Transmitting XRDY\n");
+			printk("@@@@ Transmitting XRDY @@@@\n");
 			if (dev->threshold)
 				num_bytes = dev->threshold;
 
@@ -488,7 +488,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 
 	while (k--) {
 		status = wait_for_event(dev);
-		printk("Status TX = %x\n", status);
+		printk("@@@@ Status TX = %x @@@@\n", status);
 		if (status == OMAP_I2C_STAT_XRDY) {
 			i2c_error = 2;
 			printk("i2c_read (data phase): pads on bus probably not configured (status=0x%x)\n",
@@ -497,11 +497,11 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 		}
 		if (status == 0 || (status & OMAP_I2C_STAT_NACK)) {
 			i2c_error = 1;
-			printk("NACK\n");
+			printk("@@@@ Got NACK @@@@\n");
 			goto rd_exit;
 		}
 		if (status & OMAP_I2C_STAT_ARDY) {
-			printk("ARDY\n");
+			printk("@@@@ Got ARDY @@@@\n");
 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
 			break;
 		}
@@ -529,7 +529,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 		}
 	}
 	if (k <= 0) {
-		printk("Timed out\n");
+		printk("@@@@ Timed out @@@@\n");
 		i2c_error = -ETIMEDOUT;
 		goto rd_exit;
 	}

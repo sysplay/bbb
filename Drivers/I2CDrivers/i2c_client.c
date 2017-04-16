@@ -49,7 +49,7 @@ static ssize_t my_read(struct file* f, char *buf, size_t count, loff_t *f_pos)
 	printk("Invoking Transfer\n");
 	ret = i2c_transfer(adap, &msg, 1); 
 	if (ret >= 0)
-		ret = copy_to_user(buf, tmp, count) ? -EFAULT : ret;
+		ret = copy_to_user(buf, tmp, count) ? -EFAULT : count;
 	kfree(tmp);
 	return ret;
 }

@@ -137,7 +137,7 @@ int i2c_xfer_msg(struct omap_i2c_dev *dev,
 			     struct i2c_msg *msg, int stop)
 {
 	unsigned long timeout;
-	u16 w;
+	u16 w, i;
 
 	printk("###addr: 0x%04x, len: %d, flags: 0x%x, stop: %d ###\n",
 		msg->addr, msg->len, msg->flags, stop);
@@ -147,6 +147,16 @@ int i2c_xfer_msg(struct omap_i2c_dev *dev,
 
 	dev->receiver = !!(msg->flags & I2C_M_RD);
 	omap_i2c_resize_fifo(dev, msg->len, dev->receiver);
+	
+	if (!dev->receiver) {
+		printk("#### Sending %d bytes #####\n", msg->len);
+		for (i = 0; i < msg->len; i++) {
+			if (!(i % 15))
+				printk("\n");
+			printk("%x\t", msg->buf[i]);
+		}
+	}
+	printk("\n");
 
 	omap_i2c_write_reg(dev, OMAP_I2C_SA_REG, msg->addr);
 

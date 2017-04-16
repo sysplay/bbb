@@ -46,7 +46,7 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *o
 	printk("#### Invoking i2c_xfer_msg with read ####\n");
 	ret = i2c_xfer_msg(dev, &msg, 1); 
 	if (ret >= 0)
-		ret = copy_to_user(buf, tmp, count) ? -EFAULT : ret;
+		ret = copy_to_user(buf, tmp, count) ? -EFAULT : count;
 	kfree(tmp);
 	return ret;
 }

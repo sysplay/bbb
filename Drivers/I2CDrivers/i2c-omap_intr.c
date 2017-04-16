@@ -291,7 +291,7 @@ void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
 		bool is_xdr)
 {
-	u16		w;
+	u16 w;
 	ENTER();
 
 	while (num_bytes--) {

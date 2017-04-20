@@ -17,10 +17,11 @@ else
 	#src-mod := $(notdir $(wildcard ${SUBDIRS}/*.mod.c))
 	#src-m := $(filter-out ${src-mod}, ${src-m})
 	#obj-m := $(src-m:.c=.o)
-	obj-m := serial-test.o serial1.o serial2.o tty_serial.o tiny_serial.o
+	obj-m := serial-test.o serial1.o serial2.o serial3.o tty_serial.o tiny_serial.o
         serial-test-y := char_serial.o test.o
         serial1-y := char_serial.o s1.o
         serial2-y := char_serial.o s2.o
+        serial3-y := char_serial.o s3.o
 
 
 endif

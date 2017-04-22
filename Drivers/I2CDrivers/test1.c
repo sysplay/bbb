@@ -24,6 +24,6 @@ int i2c_read(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t len)
 	//Check for the status - RRDY, then write the data in data register
 	//Check if ARDY is come
 
-	return 0;
+	return omap_i2c_read_msg(dev, msg, 1); /* For varifying i2c_writing */
 }
 

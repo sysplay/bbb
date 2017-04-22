@@ -11,6 +11,7 @@ int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 	//Check if ARDY is come
 	
 	/* Set the threshold to 0 and clear buffers */
+	u16 cnt = 1;
 	u16 w = omap_i2c_read_reg(dev, OMAP_I2C_BUF_REG);
 	u16 status;
 	int i2c_error = 0;
@@ -19,11 +20,11 @@ int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 	w |= OMAP_I2C_BUF_TXFIF_CLR;
 	omap_i2c_write_reg(dev, OMAP_I2C_BUF_REG, w);
 	omap_i2c_write_reg(dev, OMAP_I2C_SA_REG, 0x50); /* Slave Address */
-	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, 1); /* Count of 1*/
+	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt); /* Count of 1*/
 	w = (OMAP_I2C_CON_MST | OMAP_I2C_CON_STT | OMAP_I2C_CON_EN | OMAP_I2C_CON_STP
 			| OMAP_I2C_CON_TRX);
+	printk("##### Sending %d bytes on the I2C bus ####\n", cnt);
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w); /* Control Register */
-
 	while (k--) {
 		status = wait_for_event(dev);
 		printk("Status = %x\n", status);
@@ -62,7 +63,7 @@ int i2c_read(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t len)
 	//Wait for anything interesting to happen on the bus
 	//Check for the status - RRDY, then write the data in data register
 	//Check if ARDY is come
-
-	return 0;
+	
+	return omap_i2c_read_msg(dev, msg, 1); /* For varifying i2c_writing */
 }
 

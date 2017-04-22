@@ -37,8 +37,10 @@ I2C Drivers
 	- i2c2.ko - To test the successful transmission of a multiple bytes with single transaction on the I2C bus
 	- i2c3.ko - To test the successful reception of a bytes on I2C bus
 	- i2c4.ko - To test the I2C transactions using the i2c_msg structure
-	- i2c-intr.ko - To test the I2C transactions with interrupts enabled
+	- i2c_intr.ko - To test the I2C transactions with interrupts enabled
+    - i2c_client_adap.ko - To test the I2c char client with i2c_adapter without using the i2c framework
 	- i2c_client.ko - I2C Client driver
+    - i2c_adap.ko - I2C adapter driver to be used with client
 	- i2c_test.ko - Test template for basic i2c driver containing read/write methods
 	- at24.ko  - Client driver for at24 based EEPROM
 
@@ -52,9 +54,9 @@ I2C Drivers
 		> Copy the corresponding file to /var/lib/tftpboot
 		> Use tftp -g <server_ip> -r <file_name> to get it on the board
 	- insmod <file_name>.ko
-	- After successful insertion of module, execute i2c_app for testing i2c_test.ko, i2c1.ko to i2c4.ko and use i2c_intr for i2c-intr.ko
-	- To test the client driver, get the i2c_client.ko and i2c-intr.ko. Do the insmod of both and use the application i2c_client_app.c
-	- To test the at24.ko client driver, insert the i2c-intr.ko and at24.ko. This will give you the interface /sys/bus/i2c/drivers/at24/0-0050/eeprom. Use the following command to read/write the eeprom:
+	- After successful insertion of module, execute i2c_app for testing i2c_test.ko, i2c1.ko to i2c4.ko and use i2c_intr for i2c_intr.ko and i2c_client_adap.ko
+	- To test the client driver, get the i2c_client.ko and i2c_adap.ko. Do the insmod of both and use the application i2c_client_app.c
+	- To test the at24.ko client driver, insert the i2c_adap.ko and at24.ko. This will give you the interface /sys/bus/i2c/drivers/at24/0-0050/eeprom. Use the following command to read/write the eeprom:
 		> cat /sys/bus/i2c/drivers/at24/0-0050/eeprom | hexdump -C (Reads the contents of eeprom)
 		> cat eeprom.bin > /sys/bus/i2c/drivers/at24/0-0050/eeprom (Writes the contents of file eeprom.bin to eeprom)
 

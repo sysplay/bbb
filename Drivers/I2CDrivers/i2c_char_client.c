@@ -28,8 +28,8 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *o
 	struct i2c_msg msg;
 	char *tmp;
 	struct omap_i2c_dev *dev = (struct omap_i2c_dev *)(f->private_data);
+	struct i2c_adapter *adap = &dev->adapter;
 	int ret;
-
 	ENTER();
 
 	if (count > 8192)
@@ -39,49 +39,28 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *o
 	if (tmp == NULL)
 		return -ENOMEM;
 
+	printk("##### Invoking i2c_xfer with read #####\n");
 	msg.addr = 0x50; //client->addr;
 	msg.flags = 0; //client->flags & I2C_M_TEN;
-	msg.len = 2;
-	msg.buf = tmp;
-	tmp[0] = 0x00; tmp[1] = 0x50;
-
-	ret = omap_i2c_wait_for_bb(dev);
-	if (ret < 0)
-	{
-		printk("Error ret = %d\n", ret);
-		goto out;
-	}
-
-	printk("#####Invoking i2c_read#####\n");
-	ret = i2c_write(dev, &msg, 1);
-	ret = omap_i2c_wait_for_bb(dev);
-	msg.addr = 0x50; //client->addr;
-	msg.flags = 0; //client->flags & I2C_M_TEN;
+	msg.flags |= I2C_M_RD;
 	msg.len = count;
 	msg.buf = tmp;
-
-	//ret = omap_i2c_read_msg(dev, &msg, 1);
-	ret = i2c_read(dev, &msg, 1);
-
-	printk("ret = %d\n", ret);
-
-	omap_i2c_wait_for_bb(dev);
+	ret = omap_i2c_xfer(adap, &msg, 1); 
 	if (ret >= 0)
-		ret = copy_to_user(buf, tmp, count) ? -EFAULT : count;
+		ret = copy_to_user(buf, tmp, count) ? -EFAULT : ret;
 	kfree(tmp);
-out:
 	return ret;
 }
 
 static ssize_t my_write(struct file *f, const char __user *buf, size_t count, loff_t *off)
 {
 	struct omap_i2c_dev *dev = (struct omap_i2c_dev *)(f->private_data);
+	struct i2c_adapter *adap = &dev->adapter;
 	char *tmp;
 	struct i2c_msg msg;
 	int ret;
 	ENTER();
 
-	*off = 0;
 	tmp = memdup_user(buf, count);
 	if (IS_ERR(tmp))
 		return PTR_ERR(tmp);
@@ -89,11 +68,11 @@ static ssize_t my_write(struct file *f, const char __user *buf, size_t count, lo
 	msg.flags = 0; //client->flags & I2C_M_TEN;
 	msg.len = count;
 	msg.buf = tmp;
-	//ret = omap_i2c_write_msg(dev, &msg, 1);
-	printk("#####Invoking i2c_write#####\n");
-	ret = i2c_write(dev, &msg, 1);
+	printk("##### Invoking i2c_write #####\n");
+	ret = omap_i2c_xfer(adap, &msg, 1); 
 	kfree(tmp);
-	return (ret == 0 ? count : ret);
+	return (ret == 1 ? count : ret);
+
 }
 
 static struct file_operations driver_fops =

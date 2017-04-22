@@ -29,7 +29,7 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *o
 	char *tmp;
 	struct omap_i2c_dev *dev = (struct omap_i2c_dev *)(f->private_data);
 	int ret;
-
+	ENTER();
 	if (count > 8192)
 		count = 8192;
 
@@ -50,7 +50,7 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *o
 		goto out;
 	}
 
-	printk("Sending Message\n");
+	printk("##### Invoking i2c_read #####\n");
 	msg.addr = 0x50; //client->addr;
 	msg.flags = 0; //client->flags & I2C_M_TEN;
 	msg.len = count;
@@ -75,6 +75,7 @@ static ssize_t my_write(struct file *f, const char __user *buf, size_t count, lo
 	char *tmp;
 	struct i2c_msg msg;
 	int ret;
+	ENTER();
 
 	*off = 0;
 	tmp = memdup_user(buf, count);
@@ -84,6 +85,7 @@ static ssize_t my_write(struct file *f, const char __user *buf, size_t count, lo
 	msg.flags = 0; //client->flags & I2C_M_TEN;
 	msg.len = count;
 	msg.buf = tmp;
+	printk("##### Invoking i2c_write #####\n");
 	//ret = omap_i2c_write_msg(dev, &msg, 1);
 	ret = i2c_write(dev, &msg, 1);
 	kfree(tmp);

@@ -43,6 +43,7 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/spinlock.h>
+#include <linux/interrupt.h>
 #include <asm/uaccess.h>
 #include "i2c_char.h"
 
@@ -208,6 +209,38 @@ static void omap_i2c_set_speed(struct omap_i2c_dev *dev)
 	dev->scllstate = scll;
 	dev->sclhstate = sclh;
 }
+int omap_i2c_reset(struct omap_i2c_dev *dev)
+{
+	unsigned long timeout;
+	u16 sysc;
+
+	sysc = omap_i2c_read_reg(dev, OMAP_I2C_SYSC_REG);
+
+	/* Disable I2C controller before soft reset */
+	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG,
+			omap_i2c_read_reg(dev, OMAP_I2C_CON_REG) &
+			~(OMAP_I2C_CON_EN));
+
+	omap_i2c_write_reg(dev, OMAP_I2C_SYSC_REG, SYSC_SOFTRESET_MASK);
+	/* For some reason we need to set the EN bit before the
+	 * reset done bit gets set. */
+	timeout = jiffies + OMAP_I2C_TIMEOUT;
+	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, OMAP_I2C_CON_EN);
+	while (!(omap_i2c_read_reg(dev, OMAP_I2C_SYSS_REG) &
+				SYSS_RESETDONE_MASK)) {
+		if (time_after(jiffies, timeout)) {
+			dev_warn(dev->dev, "timeout waiting "
+					"for controller reset\n");
+			return -ETIMEDOUT;
+		}
+		msleep(1);
+	}
+
+	/* SYSC register is cleared by the reset; rewrite it */
+	omap_i2c_write_reg(dev, OMAP_I2C_SYSC_REG, sysc);
+
+	return 0;
+}
 
 int omap_i2c_init(struct omap_i2c_dev *dev)
 {
@@ -238,7 +271,7 @@ void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 	 */
 
 	dev->threshold = clamp(size, (u8) 1, dev->fifo_size);
-	printk("@@@@ thr = %d @@@@\n", dev->threshold);
+	printk("thr = %d\n", dev->threshold);
 
 	buf = omap_i2c_read_reg(dev, OMAP_I2C_BUF_REG);
 
@@ -258,7 +291,8 @@ void omap_i2c_resize_fifo(struct omap_i2c_dev *dev, u8 size, bool is_rx)
 static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
 		bool is_xdr)
 {
-	u16		w;
+	u16 w;
+	ENTER();
 
 	while (num_bytes--) {
 		w = *dev->buf++;
@@ -283,6 +317,7 @@ static void omap_i2c_receive_data(struct omap_i2c_dev *dev, u8 num_bytes,
 		bool is_rdr)
 {
 	u16		w;
+	ENTER();
 
 	while (num_bytes--) {
 		w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
@@ -337,7 +372,7 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev,
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
 	while (k--) {
 		status = wait_for_event(dev);
-		printk("@@@@ Status = %x @@@@\n", status);
+		printk("status = %x\n", status);
 		if (status & OMAP_I2C_STAT_XDR) {
 			u8 num_bytes = 1;
 			int ret;
@@ -345,7 +380,7 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev,
 			if (dev->fifo_size)
 				num_bytes = dev->buf_len;
 
-			printk("@@@@ Transmitting XDR @@@@\n");
+			printk("Transmitting XDR\n");
 			ret = omap_i2c_transmit_data(dev, num_bytes, true);
 			if (ret < 0)
 				break;
@@ -357,7 +392,7 @@ int omap_i2c_write_msg(struct omap_i2c_dev *dev,
 			u8 num_bytes = 1;
 			int ret;
 
-			printk("@@@@ Transmitting XRDY @@@@\n");
+			printk("Transmitting XRDY\n");
 			if (dev->threshold)
 				num_bytes = dev->threshold;
 
@@ -431,7 +466,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
 	while (k--) {
 		status = wait_for_event(dev);
-		printk("@@@@ Status = %x @@@@@\n", status);
+		printk("status = %x\n", status);
 		if (status & OMAP_I2C_STAT_XDR) {
 			u8 num_bytes = 1;
 			int ret;
@@ -439,7 +474,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 			if (dev->fifo_size)
 				num_bytes = dev->buf_len;
 
-			printk("@@@@ Transmitting XDR @@@@\n");
+			printk("Transmitting XDR\n");
 			ret = omap_i2c_transmit_data(dev, num_bytes, true);
 			if (ret < 0)
 				break;
@@ -451,7 +486,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 			u8 num_bytes = 1;
 			int ret;
 
-			printk("@@@@ Transmitting XRDY @@@@\n");
+			printk("Transmitting XRDY\n");
 			if (dev->threshold)
 				num_bytes = dev->threshold;
 
@@ -488,7 +523,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 
 	while (k--) {
 		status = wait_for_event(dev);
-		printk("@@@@ Status TX = %x @@@@\n", status);
+		printk("Status TX = %x\n", status);
 		if (status == OMAP_I2C_STAT_XRDY) {
 			i2c_error = 2;
 			printk("i2c_read (data phase): pads on bus probably not configured (status=0x%x)\n",
@@ -497,11 +532,11 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 		}
 		if (status == 0 || (status & OMAP_I2C_STAT_NACK)) {
 			i2c_error = 1;
-			printk("@@@@ Got NACK @@@@\n");
+			printk("NACK\n");
 			goto rd_exit;
 		}
 		if (status & OMAP_I2C_STAT_ARDY) {
-			printk("@@@@ Got ARDY @@@@\n");
+			printk("ARDY\n");
 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
 			break;
 		}
@@ -529,7 +564,7 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 		}
 	}
 	if (k <= 0) {
-		printk("@@@@ Timed out @@@@\n");
+		printk("Timed out\n");
 		i2c_error = -ETIMEDOUT;
 		goto rd_exit;
 	}
@@ -537,6 +572,178 @@ rd_exit:
 	flush_fifo(dev);
 	omap_i2c_write_reg(dev, OMAP_I2C_STAT_REG, 0XFFFF);
 	return i2c_error;
+}
+
+static irqreturn_t
+omap_i2c_isr(int irq, void *dev_id)
+{
+	struct omap_i2c_dev *dev = dev_id;
+	irqreturn_t ret = IRQ_HANDLED;
+	u16 mask;
+	u16 stat;
+	printk("### In ISR ###\n");
+
+	spin_lock(&dev->lock);
+	mask = omap_i2c_read_reg(dev, OMAP_I2C_IE_REG);
+	stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
+
+	if (stat & mask)
+		ret = IRQ_WAKE_THREAD;
+
+	spin_unlock(&dev->lock);
+
+	return ret;
+}
+
+static inline void
+omap_i2c_complete_cmd(struct omap_i2c_dev *dev, u16 err)
+{
+	printk("### In completion err = %x ###\n", err);
+	dev->cmd_err |= err;
+	complete(&dev->cmd_complete);
+}
+
+static irqreturn_t
+omap_i2c_isr_thread(int this_irq, void *dev_id)
+{
+	struct omap_i2c_dev *dev = dev_id;
+	unsigned long flags;
+	u16 bits;
+	u16 stat;
+	int err = 0, count = 0;
+	printk("#### In ISR Thread ####\n");
+
+	spin_lock_irqsave(&dev->lock, flags);
+	do {
+		bits = omap_i2c_read_reg(dev, OMAP_I2C_IE_REG);
+		stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
+		stat &= bits;
+
+		/* If we're in receiver mode, ignore XDR/XRDY */
+		if (dev->receiver)
+			stat &= ~(OMAP_I2C_STAT_XDR | OMAP_I2C_STAT_XRDY);
+		else
+			stat &= ~(OMAP_I2C_STAT_RDR | OMAP_I2C_STAT_RRDY);
+
+		if (!stat) {
+			/* my work here is done */
+			goto out;
+		}
+
+		dev_dbg(dev->dev, "IRQ (ISR = 0x%04x)\n", stat);
+		//printk("IRQ (ISR = 0x%04x\n", stat);
+		if (count++ == 100) {
+			dev_warn(dev->dev, "Too much work in one IRQ\n");
+			break;
+		}
+
+		if (stat & OMAP_I2C_STAT_NACK) {
+			err |= OMAP_I2C_STAT_NACK;
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
+			break;
+		}
+
+		if (stat & OMAP_I2C_STAT_AL) {
+			dev_err(dev->dev, "Arbitration lost\n");
+			err |= OMAP_I2C_STAT_AL;
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_AL);
+			break;
+		}
+
+		/*
+		 * ProDB0017052: Clear ARDY bit twice
+		 */
+		if (stat & OMAP_I2C_STAT_ARDY)
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
+
+		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
+					OMAP_I2C_STAT_AL)) {
+			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
+						OMAP_I2C_STAT_RDR |
+						OMAP_I2C_STAT_XRDY |
+						OMAP_I2C_STAT_XDR |
+						OMAP_I2C_STAT_ARDY));
+			break;
+		}
+
+		if (stat & OMAP_I2C_STAT_RDR) {
+			u8 num_bytes = 1;
+			printk("### Got RDR ####\n");
+
+			if (dev->fifo_size)
+				num_bytes = dev->buf_len;
+
+			omap_i2c_receive_data(dev, num_bytes, true);
+
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
+			continue;
+		}
+
+		if (stat & OMAP_I2C_STAT_RRDY) {
+			u8 num_bytes = 1;
+
+			printk("### Got RRDY ####\n");
+			if (dev->threshold)
+				num_bytes = dev->threshold;
+
+			omap_i2c_receive_data(dev, num_bytes, false);
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RRDY);
+			continue;
+		}
+
+		if (stat & OMAP_I2C_STAT_XDR) {
+			u8 num_bytes = 1;
+			int ret;
+			printk("### Got XDR ####\n");
+
+			if (dev->fifo_size)
+				num_bytes = dev->buf_len;
+
+			ret = omap_i2c_transmit_data(dev, num_bytes, true);
+			if (ret < 0)
+				break;
+
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XDR);
+			continue;
+		}
+
+		if (stat & OMAP_I2C_STAT_XRDY) {
+			u8 num_bytes = 1;
+			int ret;
+			printk("### Got XRDY ####\n");
+
+			if (dev->threshold)
+				num_bytes = dev->threshold;
+
+			ret = omap_i2c_transmit_data(dev, num_bytes, false);
+			if (ret < 0)
+				break;
+
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XRDY);
+			continue;
+		}
+
+		if (stat & OMAP_I2C_STAT_ROVR) {
+			printk("### Got Overrun ####\n");
+			err |= OMAP_I2C_STAT_ROVR;
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ROVR);
+			break;
+		}
+
+		if (stat & OMAP_I2C_STAT_XUDF) {
+			printk("### Got underrun ####\n");
+			err |= OMAP_I2C_STAT_XUDF;
+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XUDF);
+			break;
+		}
+	} while (stat);
+
+	omap_i2c_complete_cmd(dev, err);
+
+out:
+	spin_unlock_irqrestore(&dev->lock, flags);
+
+	return IRQ_HANDLED;
 }
 
 #ifdef CONFIG_OF
@@ -571,7 +778,15 @@ static int omap_i2c_probe(struct platform_device *pdev)
 		dev_get_platdata(&pdev->dev);
 	struct device_node	*node = pdev->dev.of_node;
 	const struct of_device_id *match;
+	int irq;
+	int r;
 	u16 s;
+
+	irq = platform_get_irq(pdev, 0);
+	if (irq < 0) {
+		dev_err(&pdev->dev, "no irq resource?\n");
+		return irq;
+	}
 
 	dev = devm_kzalloc(&pdev->dev, sizeof(struct omap_i2c_dev), GFP_KERNEL);
 	if (!dev) {
@@ -600,10 +815,12 @@ static int omap_i2c_probe(struct platform_device *pdev)
 	}
 
 	dev->dev = &pdev->dev;
+	dev->irq = irq;
 
 	spin_lock_init(&dev->lock);
 
 	platform_set_drvdata(pdev, dev);
+	init_completion(&dev->cmd_complete);
 
 	dev->regs = (u8 *)reg_map_ip_v2;
 
@@ -621,6 +838,15 @@ static int omap_i2c_probe(struct platform_device *pdev)
 
 	/* reset ASAP, clearing any IRQs */
 	omap_i2c_init(dev);
+	r = devm_request_threaded_irq(&pdev->dev, dev->irq,
+			omap_i2c_isr, omap_i2c_isr_thread,
+			IRQF_NO_SUSPEND | IRQF_ONESHOT,
+			pdev->name, dev);
+
+	if (r) {
+		dev_err(dev->dev, "failure requesting irq %i\n", dev->irq);
+		return -1;
+	}
 
 	/* Char interface related initialization */
 	dev->i2c_class = i2c_class;
@@ -648,7 +874,7 @@ static struct platform_driver omap_i2c_driver = {
 };
 
 /* I2C may be needed to bring up other drivers */
-static int __init omap_i2c_init_driver(void)
+int __init omap_i2c_init_driver(void)
 {
 	if ((i2c_class = class_create(THIS_MODULE, "i2cdrv")) == NULL)
 	{

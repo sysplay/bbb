@@ -82,8 +82,6 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
 			struct ktermios *old);
 
 static char start_flg = 0;
-static char ch;
-static char count = 0;
 
 static inline unsigned int serial_in(struct uart_omap_port *up, int offset)
 {
@@ -96,31 +94,36 @@ static inline void serial_out(struct uart_omap_port *up, int offset, int value)
 	offset <<= up->port.regshift;
 	writew(value, up->port.membase + offset);
 }
+/* 
+ * APIs
+ * serial_out - Writing the uart registers
+ * serial_in  - Reading from the uart registers
+ *
+ */
 
-static inline void serial_omap_clear_fifos(struct uart_omap_port *up)
-{
-	FUNC_ENTER();
-	serial_out(up, UART_FCR, UART_FCR_ENABLE_FIFO);
-	serial_out(up, UART_FCR, UART_FCR_ENABLE_FIFO |
-		       UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT);
-	serial_out(up, UART_FCR, 0);
-}
-
+/* 
+ * Registers & MASK
+ * UART_LSR - Line Status Register
+ * UART_TX -  Xmit Register
+ * UART_LSR_THRE - Transmitter FIFO Empty mask
+ * UART_LSR_DR   - RX FIFO Empty mask
+ *
+ */
 static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
 {
-	char ch = 'x';
-
-	while ((serial_in(up, UART_LSR) & UART_LSR_THRE) == 0);
-	serial_out(up, UART_TX, ch);
-}
-
-static inline void serial_omap_enable_ier_thri(struct uart_omap_port *up)
-{
-	FUNC_ENTER();
-	if (!(up->ier & UART_IER_THRI)) {
-		up->ier |= UART_IER_THRI;
-		serial_out(up, UART_IER, up->ier);
+	/* 
+	 * 1. Wait for UART_LSR_THRE bit to be set
+	 * 2. Write into the UART_TX register
+	 *
+	 */
+	int cnt = 10;
+	while (!(serial_in(up, UART_LSR) & UART_LSR_THRE) && cnt--)
+			msleep(10);
+	if (cnt <= 0) {
+			printk("TX timed out\n");
+			return;
 	}
+	serial_out(up, UART_TX, 'p');
 }
 
 void serial_omap_start_tx(struct uart_port *port)
@@ -130,73 +133,27 @@ void serial_omap_start_tx(struct uart_port *port)
 	transmit_chars(up, 0);
 }
 
-static void serial_omap_rlsi(struct uart_omap_port *up, unsigned int lsr)
-{
-	unsigned char ch = 0;
-	FUNC_ENTER();
-
-	if (likely(lsr & UART_LSR_DR))
-		ch = serial_in(up, UART_RX);
-}
-
 int serial_read(struct uart_omap_port *up, size_t len)
 {
-	if (count)
-	{
-		printk("ch = %c\n", ch);
-		count = 0;
-		return 1;
+	/* 
+	* 1. Wait for UART_LSR_DR to be set
+	* 2. Read the data from UART_RX register
+	*
+	*/
+	int cnt = 10;
+	while (!(serial_in(up, UART_LSR) & UART_LSR_DR) && cnt--)
+			msleep(10);
+	if (cnt <= 0) {
+			printk("RX timed out\n");
+			return -ETIMEDOUT;
 	}
-	return 0;
+	printk("Char = %c\n", serial_in(up, UART_RX));
+	return 1;
 }		
-
-static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
-{
-	FUNC_ENTER();
-	if (!(lsr & UART_LSR_DR))
-		return;
-	ch = serial_in(up, UART_RX);
-	count = 1;
-}
-
-/**
- * serial_omap_irq() - This handles the interrupt from one port
- * @irq: uart port irq number
- * @dev_id: uart port info
- */
-static irqreturn_t serial_omap_irq(int irq, void *dev_id)
-{
-	struct uart_omap_port *up = dev_id;
-	unsigned int iir, lsr;
-	unsigned int type;
-	irqreturn_t ret = IRQ_NONE;
-
-	spin_lock(&up->port.lock);
-
-	iir = serial_in(up, UART_IIR);
-	if (iir & UART_IIR_NO_INT)
-		return ret;
-
-	lsr = serial_in(up, UART_LSR);
-
-	/* extract IRQ type from IIR register */
-	type = iir & 0x3e;
-	printk("Interrupt Type = %x\n", type);
-	if (type == UART_IIR_RDI) {
-		serial_omap_rdi(up, lsr);
-		ret = IRQ_HANDLED;
-	}
-	if (type == UART_IIR_RLSI)
-	 	serial_omap_rlsi(up, lsr);
-	spin_unlock(&up->port.lock);
-	return ret;
-}
-
 
 int serial_omap_startup(struct uart_port *port)
 {
 	struct uart_omap_port *up = to_uart_omap_port(port);
-	int retval;
 	struct ktermios termios;
 
 	if (start_flg)
@@ -207,21 +164,11 @@ int serial_omap_startup(struct uart_port *port)
 
 	spin_lock_init(&up->port.lock);
 
-	/*
-	 * Allocate the IRQ
-	 */
-	retval = request_irq(up->port.irq, serial_omap_irq, up->port.irqflags,
-				up->name, up);
-	if (retval)
-		return retval;
-
-	dev_dbg(up->port.dev, "serial_omap_startup+%d\n", up->port.line);
-
-	/*
+/*
 	 * Clear the FIFO buffers and disable them.
 	 * (they will be reenabled in set_termios())
 	 */
-	serial_omap_clear_fifos(up);
+	serial_out(up, UART_FCR, 0);
 
 	/*
 	 * Clear the interrupt registers.
@@ -236,15 +183,8 @@ int serial_omap_startup(struct uart_port *port)
 	 * Now, initialize the UART
 	 */
 	serial_out(up, UART_LCR, UART_LCR_WLEN8);
-
-	/*
-	 * Finally, enable interrupts. Note: Modem status interrupts
-	 * are set via set_termios(), which will be occurring imminently
-	 * anyway, so we don't enable them here.
-	 */
-	up->ier = UART_IER_RLSI | UART_IER_RDI;
-	serial_out(up, UART_IER, up->ier);
-
+	/* Disable Interrupts */
+	up->ier = 0;
 	/* Enable module level wake up */
 	up->wer = OMAP_UART_WER_MOD_WKUP;
 	if (up->features & OMAP_UART_WER_HAS_TX_WAKEUP)
@@ -277,11 +217,6 @@ void serial_omap_shutdown(struct uart_port *port)
 	up->ier = 0;
 	serial_out(up, UART_IER, 0);
 
-	/*
-	 * Disable break condition and FIFOs
-	 */
-	serial_out(up, UART_LCR, serial_in(up, UART_LCR) & ~UART_LCR_SBC);
-	serial_omap_clear_fifos(up);
 
 	/*
 	 * Read data port to reset things, and then free the irq
@@ -289,7 +224,6 @@ void serial_omap_shutdown(struct uart_port *port)
 	if (serial_in(up, UART_LSR) & UART_LSR_DR)
 		(void) serial_in(up, UART_RX);
 
-	free_irq(up->port.irq, up);
 }
 
 
@@ -364,36 +298,8 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
 	serial_out(up, UART_DLL, 0);
 	serial_out(up, UART_DLM, 0);
 	serial_out(up, UART_LCR, 0);
-
-	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
-
-	up->efr = serial_in(up, UART_EFR) & ~UART_EFR_ECB;
-	up->efr &= ~UART_EFR_SCD;
-	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
-
-	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
-	up->mcr = serial_in(up, UART_MCR) & ~UART_MCR_TCRTLR;
-	serial_out(up, UART_MCR, up->mcr | UART_MCR_TCRTLR);
-	/* FIFO ENABLE, DMA MODE */
-
-	up->scr |= OMAP_UART_SCR_RX_TRIG_GRANU1_MASK;
-	/*
-	 * NOTE: Setting OMAP_UART_SCR_RX_TRIG_GRANU1_MASK
-	 * sets Enables the granularity of 1 for TRIGGER RX
-	 * level. Along with setting RX FIFO trigger level
-	 * to 1 (as noted below, 16 characters) and TLR[3:0]
-	 * to zero this will result RX FIFO threshold level
-	 * to 1 character, instead of 16 as noted in comment
-	 * below.
-	 */
-
-	/* Set receive FIFO threshold to 16 characters and
-	 * transmit FIFO threshold to 16 spaces
-	 */
-	up->fcr &= ~OMAP_UART_FCR_RX_FIFO_TRIG_MASK;
-	up->fcr &= ~OMAP_UART_FCR_TX_FIFO_TRIG_MASK;
-	up->fcr |= UART_FCR6_R_TRIGGER_16 | UART_FCR6_T_TRIGGER_24 |
-		UART_FCR_ENABLE_FIFO;
+	up->fcr = 0;
+	up->efr = 0;
 
 	serial_out(up, UART_FCR, up->fcr);
 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
@@ -430,15 +336,8 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
 	up->mdr1 = UART_OMAP_MDR1_13X_MODE;
 	serial_out(up, UART_OMAP_MDR1, up->mdr1);
 
-	/* Configure flow control */
-	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
-
-	/* Enable access to TCR/TLR */
-	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
-	serial_out(up, UART_MCR, up->mcr | UART_MCR_TCRTLR);
 
-	serial_out(up, UART_TI752_TCR, OMAP_UART_TCR_TRIG);
 	serial_out(up, UART_MCR, up->mcr);
 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
 	serial_out(up, UART_EFR, up->efr);
@@ -465,7 +364,7 @@ static struct omap_uart_port_info *of_get_uart_port_info(struct device *dev)
 static int serial_omap_probe(struct platform_device *pdev)
 {
 	struct uart_omap_port	*up;
-	struct resource		*mem, *irq;
+	struct resource		*mem;
 	struct omap_uart_port_info *omap_up_info = dev_get_platdata(&pdev->dev);
 	int ret;
 
@@ -479,11 +378,6 @@ static int serial_omap_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (!irq) {
-		dev_err(&pdev->dev, "no irq resource?\n");
-		return -ENODEV;
-	}
 
 	if (!devm_request_mem_region(&pdev->dev, mem->start, resource_size(mem),
 				pdev->dev.driver->name)) {
@@ -498,7 +392,6 @@ static int serial_omap_probe(struct platform_device *pdev)
 	up->port.dev = &pdev->dev;
 	up->port.type = PORT_16550A;
 	up->port.iotype = UPIO_MEM;
-	up->port.irq = irq->start;
 
 	up->port.regshift = 2;
 

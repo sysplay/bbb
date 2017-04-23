@@ -41,6 +41,7 @@
 #include <linux/of.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
+#include <linux/wait.h>
 #include <linux/platform_data/serial-omap.h>
 #include "char_serial.h"
 
@@ -81,6 +82,8 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
 			struct ktermios *old);
 
 static char start_flg = 0;
+static char ch;
+static char count = 0;
 
 static inline unsigned int serial_in(struct uart_omap_port *up, int offset)
 {
@@ -103,28 +106,12 @@ static inline void serial_omap_clear_fifos(struct uart_omap_port *up)
 	serial_out(up, UART_FCR, 0);
 }
 
-static void serial_omap_stop_tx(struct uart_port *port)
-{
-	struct uart_omap_port *up = to_uart_omap_port(port);
-	FUNC_ENTER();
-
-	if (up->ier & UART_IER_THRI) {
-		up->ier &= ~UART_IER_THRI;
-		serial_out(up, UART_IER, up->ier);
-	}
-}
-
 static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
 {
-	int count = up->port.icount.tx, i;
+	char ch = 'x';
 
-	FUNC_ENTER();
-
-	for (i = 0; i < count; i++)
-	{
-		serial_out(up, UART_TX, up->tx_buff[i]);
-	}
-	serial_omap_stop_tx(&up->port);
+	while ((serial_in(up, UART_LSR) & UART_LSR_THRE) == 0);
+	serial_out(up, UART_TX, ch);
 }
 
 static inline void serial_omap_enable_ier_thri(struct uart_omap_port *up)
@@ -140,73 +127,36 @@ void serial_omap_start_tx(struct uart_port *port)
 {
 	struct uart_omap_port *up = to_uart_omap_port(port);
 	FUNC_ENTER();
-	serial_omap_enable_ier_thri(up);
+	transmit_chars(up, 0);
 }
 
 static void serial_omap_rlsi(struct uart_omap_port *up, unsigned int lsr)
 {
-	unsigned int flag;
 	unsigned char ch = 0;
 	FUNC_ENTER();
 
 	if (likely(lsr & UART_LSR_DR))
 		ch = serial_in(up, UART_RX);
-
-	up->port.icount.rx++;
-	flag = TTY_NORMAL;
-
-	if (lsr & UART_LSR_BI) {
-		flag = TTY_BREAK;
-		lsr &= ~(UART_LSR_FE | UART_LSR_PE);
-		up->port.icount.brk++;
-		/*
-		 * We do the SysRQ and SAK checking
-		 * here because otherwise the break
-		 * may get masked by ignore_status_mask
-		 * or read_status_mask.
-		 */
-		if (uart_handle_break(&up->port))
-			return;
-	}
-
-	if (lsr & UART_LSR_PE) {
-		flag = TTY_PARITY;
-		up->port.icount.parity++;
-	}
-
-	if (lsr & UART_LSR_FE) {
-		flag = TTY_FRAME;
-		up->port.icount.frame++;
-	}
-
-	if (lsr & UART_LSR_OE)
-		up->port.icount.overrun++;
-
-	//uart_insert_char(&up->port, lsr, UART_LSR_OE, 0, flag);
 }
 
 int serial_read(struct uart_omap_port *up, size_t len)
 {
-	int count;
-	if (up->port.icount.rx < len)
-		count = up->port.icount.rx;
-	else
-		count = len;
-	up->port.icount.rx -= count;
-	return count;
+	if (count)
+	{
+		printk("ch = %c\n", ch);
+		count = 0;
+		return 1;
+	}
+	return 0;
 }		
 
 static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
 {
 	FUNC_ENTER();
-
 	if (!(lsr & UART_LSR_DR))
 		return;
-
-	up->rx_buff[up->port.icount.rx++] = serial_in(up, UART_RX);
-	
-	if (up->port.icount.rx >= up->rx_size)
-		up->port.icount.rx = 0;
+	ch = serial_in(up, UART_RX);
+	count = 1;
 }
 
 /**
@@ -220,47 +170,25 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
 	unsigned int iir, lsr;
 	unsigned int type;
 	irqreturn_t ret = IRQ_NONE;
-	int max_count = 256;
-	FUNC_ENTER();
 
 	spin_lock(&up->port.lock);
 
-	do {
-		iir = serial_in(up, UART_IIR);
-		if (iir & UART_IIR_NO_INT)
-			break;
+	iir = serial_in(up, UART_IIR);
+	if (iir & UART_IIR_NO_INT)
+		return ret;
 
+	lsr = serial_in(up, UART_LSR);
+
+	/* extract IRQ type from IIR register */
+	type = iir & 0x3e;
+	printk("Interrupt Type = %x\n", type);
+	if (type == UART_IIR_RDI) {
+		serial_omap_rdi(up, lsr);
 		ret = IRQ_HANDLED;
-		lsr = serial_in(up, UART_LSR);
-
-		/* extract IRQ type from IIR register */
-		type = iir & 0x3e;
-		printk("type = %x\n", type);
-
-		switch (type) {
-		case UART_IIR_THRI:
-			transmit_chars(up, lsr);
-			break;
-		case UART_IIR_RX_TIMEOUT:
-			/* FALLTHROUGH */
-		case UART_IIR_RDI:
-			serial_omap_rdi(up, lsr);
-			break;
-		case UART_IIR_RLSI:
-			serial_omap_rlsi(up, lsr);
-			break;
-		case UART_IIR_CTS_RTS_DSR:
-			/* simply try again */
-			break;
-		case UART_IIR_XOFF:
-			/* FALLTHROUGH */
-		default:
-			break;
-		}
-	} while (!(iir & UART_IIR_NO_INT) && max_count--);
-
+	}
+	if (type == UART_IIR_RLSI)
+	 	serial_omap_rlsi(up, lsr);
 	spin_unlock(&up->port.lock);
-
 	return ret;
 }
 

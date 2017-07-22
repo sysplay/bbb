@@ -1,0 +1,253 @@
+--- am335x-boneblack-epid.dts	2017-07-22 08:27:25.782396968 +0530
++++ am335x-boneblack.dts	2017-07-22 08:31:27.951586527 +0530
+@@ -99,18 +99,6 @@
+ 			phandle = <0x4>;
+ 		};
+ 
+-		pinmux_spi0_pins {
+-			pinctrl-single,pins = <0x150 0x30 0x154 0x30 0x158 0x10 0x15c 0x10>;
+-			linux,phandle = <0x71>;
+-			phandle = <0x71>;
+-		};
+-
+-		pinmux_uart1_pins {
+-			pinctrl-single,pins = <0x180 0x30 0x184 0x0>;
+-			linux,phandle = <0x70>;
+-			phandle = <0x70>;
+-		};
+-
+ 		pinmux_clkout2_pin {
+ 			pinctrl-single,pins = <0x1b4 0x3>;
+ 			linux,phandle = <0x3>;
+@@ -256,14 +244,12 @@
+ 		};
+ 
+ 		serial@48022000 {
+-			compatible = "ti,my-uart";
++			compatible = "ti,omap3-uart";
+ 			ti,hwmods = "uart2";
+ 			clock-frequency = <0x2dc6c00>;
+ 			reg = <0x48022000 0x2000>;
+ 			interrupts = <0x49>;
+-			status = "okay";
+-			pinctrl-names = "default";
+-			pinctrl-0 = <0x70>;
++			status = "disabled";
+ 			linux,phandle = <0x22>;
+ 			phandle = <0x22>;
+ 		};
+@@ -326,19 +312,90 @@
+ 			linux,phandle = <0x1c>;
+ 			phandle = <0x1c>;
+ 
++			tps@24 {
++				reg = <0x24>;
++				compatible = "ti,tps65217";
++				linux,phandle = <0x27>;
++				phandle = <0x27>;
++
++				regulators {
++					#address-cells = <0x1>;
++					#size-cells = <0x0>;
++
++					regulator@0 {
++						reg = <0x0>;
++						regulator-compatible = "dcdc1";
++						regulator-always-on;
++						linux,phandle = <0x28>;
++						phandle = <0x28>;
++					};
++
++					regulator@1 {
++						reg = <0x1>;
++						regulator-compatible = "dcdc2";
++						regulator-name = "vdd_mpu";
++						regulator-min-microvolt = <0xe1d48>;
++						regulator-max-microvolt = <0x1437c8>;
++						regulator-boot-on;
++						regulator-always-on;
++						linux,phandle = <0x2>;
++						phandle = <0x2>;
++					};
++
++					regulator@2 {
++						reg = <0x2>;
++						regulator-compatible = "dcdc3";
++						regulator-name = "vdd_core";
++						regulator-min-microvolt = <0xe1d48>;
++						regulator-max-microvolt = <0x118c30>;
++						regulator-boot-on;
++						regulator-always-on;
++						linux,phandle = <0x29>;
++						phandle = <0x29>;
++					};
++
++					regulator@3 {
++						reg = <0x3>;
++						regulator-compatible = "ldo1";
++						regulator-always-on;
++						linux,phandle = <0x2a>;
++						phandle = <0x2a>;
++					};
++
++					regulator@4 {
++						reg = <0x4>;
++						regulator-compatible = "ldo2";
++						regulator-always-on;
++						linux,phandle = <0x2b>;
++						phandle = <0x2b>;
++					};
++
++					regulator@5 {
++						reg = <0x5>;
++						regulator-compatible = "ldo3";
++						regulator-always-on;
++						regulator-min-microvolt = <0x1b7740>;
++						regulator-max-microvolt = <0x1b7740>;
++						linux,phandle = <0x2c>;
++						phandle = <0x2c>;
++					};
++
++					regulator@6 {
++						reg = <0x6>;
++						regulator-compatible = "ldo4";
++						regulator-always-on;
++						linux,phandle = <0x2d>;
++						phandle = <0x2d>;
++					};
++				};
++			};
++
+ 			baseboard_eeprom@50 {
+ 				compatible = "at,24c256";
+ 				reg = <0x50>;
+ 				linux,phandle = <0x17>;
+ 				phandle = <0x17>;
+ 			};
+-
+-			dummy_device@51 {
+-				compatible = "at,25c256";
+-				reg = <0x51>;
+-				linux,phandle = <0x80>;
+-				phandle = <0x80>;
+-			};
+ 		};
+ 
+ 		i2c@4802a000 {
+@@ -396,18 +453,6 @@
+ 			};
+ 		};
+ 
+-		i2c@49607899 {
+-			compatible = "dummy_adap";
+-			clock-frequency = <0x186a0>;
+-			#address-cells = <0x1>;
+-			#size-cells = <0x0>;
+-
+-			my_dummy@0 {
+-				compatible = "dummy_device";
+-				reg = <0x40>;
+-			};
+-		};
+-
+ 		mmc@48060000 {
+ 			compatible = "ti,omap4-hsmmc";
+ 			ti,hwmods = "mmc1";
+@@ -588,17 +633,9 @@
+ 			ti,hwmods = "spi0";
+ 			dmas = <0x7 0x10 0x7 0x11 0x7 0x12 0x7 0x13>;
+ 			dma-names = "tx0", "rx0", "tx1", "rx1";
+-			status = "okay";
+-			pinctrl-names = "default";
+-			pinctrl-0 = <0x71>;
++			status = "disabled";
+ 			linux,phandle = <0x3e>;
+ 			phandle = <0x3e>;
+-
+-			spidev@0 {
+-				spi-max-frequency = <0x16e3600>;
+-				reg = <0x0>;
+-				compatible = "linux,spidev";
+-			};
+ 		};
+ 
+ 		spi@481a0000 {
+@@ -616,22 +653,6 @@
+ 			phandle = <0x3f>;
+ 		};
+ 
+-		spi@0x00000000 {
+-			compatible = "dummy-master";
+-			#address-cells = <0x1>;
+-			#size-cells = <0x0>;
+-			reg = <0xa00000 0x400>;
+-			interrupts = <0x7>;
+-			ti,spi-num-cs = <0x2>;
+-			status = "okay";
+-
+-			dummydev@1 {
+-				spi-max-frequency = <0x16e3600>;
+-				reg = <0x0>;
+-				compatible = "dummy-spi";
+-			};
+-		};
+-
+ 		usb@47400000 {
+ 			compatible = "ti,am33xx-usb";
+ 			reg = <0x47400000 0x1000>;
+@@ -1127,14 +1148,45 @@
+ 		};
+ 	};
+ 
++	fb@4830e000 {
++		compatible = "ti,am33xx-tilcdc";
++		reg = <0x4830e000 0x1000>;
++		interrupt-parent = <0x1>;
++		interrupts = <0x24>;
++		ti,hwmods = "lcdc";
++		linux,phandle = <0x59>;
++		phandle = <0x59>;
++	};
++
++	hdmi {
++		compatible = "ti,tilcdc,slave";
++		i2c = <0x1c>;
++		pinctrl-names = "default";
++		pinctrl-0 = <0x1d>;
++		status = "okay";
++		linux,phandle = <0x5a>;
++		phandle = <0x5a>;
++
++		panel-info {
++			bpp = <0x10>;
++			ac-bias = <0xff>;
++			ac-bias-intrpt = <0x0>;
++			dma-burst-sz = <0x10>;
++			fdd = <0x10>;
++			sync-edge = <0x1>;
++			sync-ctrl = <0x1>;
++			raster-order = <0x0>;
++			fifo-th = <0x0>;
++			invert-pxl-clk;
++		};
++	};
++
+ 	__symbols__ {
+ 		am33xx_pinmux = "/pinmux@44e10800";
+ 		user_leds_s0 = "/pinmux@44e10800/user_leds_s0";
+ 		i2c0_pins = "/pinmux@44e10800/pinmux_i2c0_pins";
+ 		i2c2_pins = "/pinmux@44e10800/pinmux_i2c2_pins";
+ 		uart0_pins = "/pinmux@44e10800/pinmux_uart0_pins";
+-		uart1_pins = "/pinmux@44e10800/pinmux_uart1_pins";
+-		spi0_pins = "/pinmux@44e10800/pinmux_spi0_pins";
+ 		clkout2_pin = "/pinmux@44e10800/pinmux_clkout2_pin";
+ 		cpsw_default = "/pinmux@44e10800/cpsw_default";
+ 		cpsw_sleep = "/pinmux@44e10800/cpsw_sleep";
+@@ -1165,7 +1217,6 @@
+ 		ldo3_reg = "/ocp/i2c@44e0b000/tps@24/regulators/regulator@5";
+ 		ldo4_reg = "/ocp/i2c@44e0b000/tps@24/regulators/regulator@6";
+ 		baseboard_eeprom = "/ocp/i2c@44e0b000/baseboard_eeprom@50";
+-		dummy_device = "/ocp/i2c@44e0b000/dummy_device@65";
+ 		i2c1 = "/ocp/i2c@4802a000";
+ 		i2c2 = "/ocp/i2c@4819c000";
+ 		cape_eeprom0 = "/ocp/i2c@4819c000/cape_eeprom0@54";

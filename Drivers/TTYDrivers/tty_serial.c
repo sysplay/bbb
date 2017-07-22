@@ -218,11 +218,11 @@ static inline void serial_omap_clear_fifos(struct uart_omap_port *up)
 static bool
 serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
 {
-	FUNC_ENTER();
 	unsigned int n13 = port->uartclk / (13 * baud);
 	unsigned int n16 = port->uartclk / (16 * baud);
 	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
 	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
+	FUNC_ENTER();
 	if(baudAbsDiff13 < 0)
 		baudAbsDiff13 = -baudAbsDiff13;
 	if(baudAbsDiff16 < 0)
@@ -239,8 +239,8 @@ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
 static unsigned int
 serial_omap_get_divisor(struct uart_port *port, unsigned int baud)
 {
-	FUNC_ENTER();
 	unsigned int divisor;
+	FUNC_ENTER();
 
 	if (!serial_omap_baud_is_mode16(port, baud))
 		divisor = 13;
@@ -480,7 +480,6 @@ static void serial_omap_set_mctrl(struct uart_port *port, unsigned int mctrl)
 static int serial_omap_startup(struct uart_port *port)
 {
 	struct uart_omap_port *up = to_uart_omap_port(port);
-	unsigned long flags = 0;
 	int retval;
 	FUNC_ENTER();
 
@@ -787,8 +786,8 @@ static int serial_omap_request_port(struct uart_port *port)
 static const char *
 serial_omap_type(struct uart_port *port)
 {
-	FUNC_ENTER();
 	struct uart_omap_port *up = to_uart_omap_port(port);
+	FUNC_ENTER();
 
 	dev_dbg(up->port.dev, "serial_omap_type+%d\n", up->port.line);
 	return up->name;

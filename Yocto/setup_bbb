@@ -35,3 +35,8 @@ else
 	echo -e "\nMACHINE = \"${MACHINE}\"" >> conf/local.conf
 	echo "MACHINE set to ${MACHINE}"
 fi
+
+echo
+# Setting up SysPlay's custom layer for BeagleBone Black
+# Assuming the meta-sysplay/conf/layer.conf file already there, which has been already created
+bitbake-layers add-layer ${BASE}/meta-sysplay # Updates conf/bblayers.conf

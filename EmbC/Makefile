@@ -20,7 +20,7 @@ fw_app.elf: leds.o timer.o eeprom.o interrupt.o arm.o i2c.o debug.o serial.o
 
 decode_xmodem.elf: serial.o debug.o
 
-.dep: ${SRCS}
+.dep: $(wildcard *.c)
 	@${CROSS_COMPILE}gcc ${CFLAGS} -MM $^ > .dep
 
 allclean: clean

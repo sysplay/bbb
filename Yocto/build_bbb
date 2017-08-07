@@ -1,0 +1,14 @@
+#!/bin/bash
+
+BASE=`pwd`
+
+pushd ${BASE}/poky
+
+. ./oe-init-build-env
+# Now, it is in build folder
+
+bitbake core-image-base # For first time, may list out depending packages to be installed
+
+# After build, images available under ${BASE}/poky/build/tmp/deploy/images
+
+popd

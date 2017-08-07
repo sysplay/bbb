@@ -1,0 +1,37 @@
+#!/bin/bash
+
+BASE=`pwd`
+
+if [ $# -gt 1 ]
+then
+	echo "Usage: $0 [ yocto_release_name, e.g. pyro, morty ]"
+	exit
+fi
+if [ "$1" = "" ]
+then
+	release="morty"
+else
+	release=$1
+fi
+
+# For yocto build system (includes BBB support)
+git clone -b ${release} git://git.yoctoproject.org/poky
+
+cd ${BASE}/poky
+
+# Setting up the build environment
+. ./oe-init-build-env
+
+# Now, it is in build folder
+
+echo
+MACHINE="beaglebone"
+# Setting up the MACHINE for beaglebone
+if (grep -q "MACHINE = \"${MACHINE}\"" conf/local.conf)
+then
+	echo "MACHINE already set to ${MACHINE}"
+else
+	cp conf/local.conf{,.org}
+	echo -e "\nMACHINE = \"${MACHINE}\"" >> conf/local.conf
+	echo "MACHINE set to ${MACHINE}"
+fi

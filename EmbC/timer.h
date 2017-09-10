@@ -4,7 +4,7 @@
 
 #include "common.h"
 
-//#define INTR_BASED_TIMER
+#define INTR_BASED_TIMER
 
 void timer_init(uint32_t msecs);
 void timer_shut(void);

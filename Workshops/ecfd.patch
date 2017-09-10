@@ -36,3 +36,15 @@ diff -Naur EmbC/rules.mk EmbCWksp/rules.mk
  	${LD} ${LDFLAGS} $^ -o $@
  
  #%.o: %.c
+diff -Naur EmbC/timer.h EmbCWksp/timer.h
+--- EmbC/timer.h	2017-09-10 14:42:21.215529601 +0530
++++ EmbCWksp/timer.h	2017-09-10 14:44:19.996512279 +0530
+@@ -4,7 +4,7 @@
+ 
+ #include "common.h"
+ 
+-#define INTR_BASED_TIMER
++//#define INTR_BASED_TIMER
+ 
+ void timer_init(uint32_t msecs);
+ void timer_shut(void);

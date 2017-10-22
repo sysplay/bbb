@@ -72,7 +72,6 @@ static int dummy_transfer_one_message(struct spi_master *master,
 
 static const struct of_device_id dummy_of_match[] = {
 	{
-		.compatible = "dummy-master",
 	},
 	{ },
 };
@@ -91,19 +90,9 @@ static int dummy_spi_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 
 	printk("@@@ Dummy SPI Probe invoked @@@\n");
+	/* Allocate the master structure, initialize the mode_bits, setup, transfer,
+	 * cleanup */
 
-	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
-	if (master == NULL) {
-		dev_dbg(&pdev->dev, "master allocation failed\n");
-		return -ENOMEM;
-	}
-
-	/* the spi->mode bits understood by this driver: */
-	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
-	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
-	master->setup = dummy_spi_setup;
-	master->transfer_one_message = dummy_transfer_one_message;
-	master->cleanup = dummy_spi_cleanup;
 	master->dev.of_node = node;
 
 	platform_set_drvdata(pdev, master);
@@ -121,8 +110,7 @@ static int dummy_spi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "No matching device found for spi master\n");
 		return -ENODEV;
 	}
-
-	status = spi_register_master(master);
+	/*  Register the master */
 	return status;
 }
 
@@ -134,20 +122,13 @@ static int dummy_spi_remove(struct platform_device *pdev)
 
 	master = platform_get_drvdata(pdev);
 	mcspi = spi_master_get_devdata(master);
-	spi_unregister_master(master);
+	/* Unregister the master */
 
 	return 0;
 }
 
 
 static struct platform_driver dummy_spi_driver = {
-	.driver = {
-		.name =		"dummy_spi",
-		.owner =	THIS_MODULE,
-		.of_match_table = dummy_of_match,
-	},
-	.probe =	dummy_spi_probe,
-	.remove =	dummy_spi_remove,
 };
 
 module_platform_driver(dummy_spi_driver);

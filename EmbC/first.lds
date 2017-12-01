@@ -13,6 +13,7 @@ SECTIONS
 	{
 		/* bss_begin = .; */
 		*(.bss)
+		*(COMMON)
 		/*
 		. = ALIGN(4);
 		bss_end = .;

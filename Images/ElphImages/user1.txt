@@ -1,0 +1,2 @@
+uenvcmd=tftpboot 80200000 uImage; tftpboot 82000000 am335x-boneblack.dtb; bootm 0x80200000 - 0x82000000;
+

@@ -14,14 +14,18 @@ int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 	u16 w = omap_i2c_read_reg(dev, OMAP_I2C_BUF_REG);
 	u16 status, cnt = 3;
 	u16 idx = 0, i;
-	u8 tx_buf[6] = {0X00, 0X50, 0x95};
+	/* Ignoring the data from above layer */
+	/* Write the data 0x95 at eemprom offset 0x0060 */
+	u8 tx_buf[6] = {0X00, 0X60, 0x97};
 	int i2c_error = 0;
+	/* Value of k is choosen as worst case. k = 4 should be good enoughfor
+ * ideal case */
 	int k = 7;
 	w &= ~(0x3f);
 	w |= OMAP_I2C_BUF_TXFIF_CLR;
 	omap_i2c_write_reg(dev, OMAP_I2C_BUF_REG, w);
 	omap_i2c_write_reg(dev, OMAP_I2C_SA_REG, 0x50); /* Slave Address */
-	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt); /* Count of 1*/
+	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt);
 	printk("##### Sending %d bytes on the I2C bus ####\n", cnt);
 	printk("#### Tx buff ####\n");
 	for (i = 0; i < cnt; i++) 
@@ -62,15 +66,9 @@ wr_exit:
 
 int i2c_read(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t len)
 {	
-	//Set the RX FIFO Threshold and clear the FIFO's
-	//Set the slave address
-	//update the count register
-	//update the CON Register to start the transaction with master mode, Reciever
-	//Wait for anything interesting to happen on the bus
-	//Check for the status - RRDY, then write the data in data register
-	//Check if ARDY is come
-	
-	return omap_i2c_read_msg(dev, msg, 1); /* For varifying i2c_writing */
+	/* This is to cross verify the contents written in i2c_write */
+	/* Below function always reads 32 bytes from offset 0x0060 */
+	return omap_i2c_read_msg(dev, msg, 1);
 
 }
 

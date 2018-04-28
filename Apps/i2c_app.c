@@ -14,7 +14,7 @@
 void main(void) 
 {
 	int file, cnt, i;
-	char buf[32] = {0X00, 0x50, 0x55, 0X80, 0X40, 0X45};
+	char buf[32] = {0X00, 0x60, 0x55, 0X80, 0X40, 0X45};
 
 	printf("******* Opening %s **********\n", FILE_NAME);
 
@@ -25,6 +25,7 @@ void main(void)
 	}
 	//Write the eeprom offset and data
 	printf("\n******* Invoking Write in App *******\n");	
+	// Write 4 bytes at eeprom offset 0x0060 
 	if (write(file,buf,6) == 6) {
 		sleep(1);
 		printf("\n******* Writing EEPROM offset *******\n");	

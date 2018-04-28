@@ -38,9 +38,9 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *o
 	if (tmp == NULL)
 		return -ENOMEM;
 
-	msg.addr = 0x50; //client->addr;
-	msg.flags = 0; //client->flags & I2C_M_TEN;
-	msg.flags |= I2C_M_RD;
+	msg.addr = 0x50; //Slave Address
+	msg.flags = 0;
+	msg.flags |= I2C_M_RD; //Read from the bus
 	msg.len = count;
 	msg.buf = tmp;
 	printk("#### Invoking i2c_xfer_msg with read ####\n");
@@ -62,8 +62,8 @@ static ssize_t my_write(struct file *f, const char __user *buf, size_t count, lo
 	tmp = memdup_user(buf, count);
 	if (IS_ERR(tmp))
 		return PTR_ERR(tmp);
-	msg.addr = 0x50; //client->addr;
-	msg.flags = 0; //client->flags & I2C_M_TEN;
+	msg.addr = 0x50; //Slave Address;
+	msg.flags = 0; //Write onto the bus;
 	msg.len = count;
 	msg.buf = tmp;
 	printk("##### Invoking i2c_xfer_msg with write #####\n");

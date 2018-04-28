@@ -14,7 +14,7 @@
 void main(void) 
 {
 	int file, cnt, i;
-	char buf[32] = {0X00, 0x50, 0xAA, 0X55, 0X33, 0XAA};
+	char buf[32] = {0X00, 0x60, 0xAA, 0X55, 0X33, 0XAA};
 
 	printf("******* Opening %s **********\n", FILE_NAME);
 

@@ -25,74 +25,29 @@ static int my_close(struct inode *i, struct file *f)
 
 static ssize_t my_read(struct file *f, char __user *buf, size_t count, loff_t *off)
 {
-	/* Reading the eeprom is combination of i2c_write & i2c_read. The
-	 * function ignores the user space data & reads 32 bytes from eeprom
-	 * offset 0x0060
-	 */
-	struct i2c_msg msg;
-	char *tmp;
 	struct omap_i2c_dev *dev = (struct omap_i2c_dev *)(f->private_data);
 	int ret;
-
 	ENTER();
+	
+	printk("##### Invoking i2c_read #####\n");
 
-	if (count > 8192)
-		count = 8192;
-
-	tmp = kmalloc(count, GFP_KERNEL);
-	if (tmp == NULL)
-		return -ENOMEM;
-
-	msg.addr = 0x50; //Slave address;
-	msg.flags = 0;
-	msg.len = 2;
-	msg.buf = tmp;
-	tmp[0] = 0x00; tmp[1] = 0x60;
-	/* Transfer the Eeprom offset */
-	printk("#####Invoking i2c_write#####\n");
-	ret = i2c_write(dev, &msg, 1);
-
-	ret = omap_i2c_wait_for_bb(dev);
-
-	/* Read the eeprom data */
-	msg.addr = 0x50; //Slave address;
-	msg.flags = 0;
-	msg.len = count;
-	msg.buf = tmp;
-
-	ret = i2c_read(dev, &msg, 1);
-
-	printk("ret = %d\n", ret);
-
-	omap_i2c_wait_for_bb(dev);
-	if (ret >= 0)
-		ret = copy_to_user(buf, tmp, count) ? -EFAULT : count;
-	kfree(tmp);
-	return ret;
+	/* Ignore the user space data */
+	ret = i2c_read(dev, NULL, 1);
+	/* The buffer is printed in the low level driver */
+	return 0;
 }
 
 static ssize_t my_write(struct file *f, const char __user *buf, size_t count, loff_t *off)
 {
 	struct omap_i2c_dev *dev = (struct omap_i2c_dev *)(f->private_data);
-	char *tmp;
-	struct i2c_msg msg;
 	int ret;
 	ENTER();
 
-	*off = 0;
-	tmp = memdup_user(buf, count);
-	if (IS_ERR(tmp))
-		return PTR_ERR(tmp);
-	msg.addr = 0x50; //Slave address;
-	msg.flags = 0;
-	msg.len = count;
-	/* tmp contains the eeprom offset as well as data, recieved from user
- 	 * space
+	printk("##### Invoking i2c_write #####\n");
+	/* Ignore the user space data. All the values are hard coded in
+ 	 * low level driver 
 	 */
-	msg.buf = tmp;
-	printk("#####Invoking i2c_write#####\n");
-	ret = i2c_write(dev, &msg, 1);
-	kfree(tmp);
+	ret = i2c_write(dev, NULL, 1);
 	return (ret == 0 ? count : ret);
 }
 

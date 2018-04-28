@@ -1,5 +1,10 @@
 #include "i2c_char.h"
 
+
+/* Eeeprom read is combination of i2c_write & i2c_read. i2c_write transfer the
+ * eeprom offset to read from. i2c_read performs the read of the actual data
+ * from the corresponding offset*/
+
 int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 {
 	//Set the TX FIFO Threshold and clear the FIFO's
@@ -14,7 +19,8 @@ int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 	u16 w = omap_i2c_read_reg(dev, OMAP_I2C_BUF_REG);
 	u16 status;
 	u16 idx = 0, i;
-	u8 tx_buf[6] = {0X00, 0X50, 0x92};
+	/* Send the eeprom offset to read from. Its 0x0060 here*/
+	u8 tx_buf[2] = {0X00, 0X60};
 	int i2c_error = 0;
 	int k = 7, cnt = 2;
 	w &= ~(0x3f);
@@ -27,7 +33,7 @@ int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 		printk("%x\t", tx_buf[i]);
 	printk("\n");
 
-	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt); /* Count of 1*/
+	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt);
 	w = (OMAP_I2C_CON_MST | OMAP_I2C_CON_STT | OMAP_I2C_CON_EN | OMAP_I2C_CON_STP
 			| OMAP_I2C_CON_TRX);
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w); /* Control Register */
@@ -76,12 +82,13 @@ int i2c_read(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t len)
 	u16 idx = 0, i;
 	u8 rx_buf[6];
 	int i2c_error = 0;
+	/* Read 3 bytes from eeprom */
 	int k = 7, cnt = 3;
 	w &= ~(0x3f << 8);
 	w |= OMAP_I2C_BUF_RXFIF_CLR;
 	omap_i2c_write_reg(dev, OMAP_I2C_BUF_REG, w);
 	omap_i2c_write_reg(dev, OMAP_I2C_SA_REG, 0x50); /* Slave Address */
-	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt); /* Count of 1*/
+	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt);
 	printk("##### Receiving %d bytes from the I2C bus ####\n", cnt);
 	w = (OMAP_I2C_CON_MST | OMAP_I2C_CON_STT | OMAP_I2C_CON_EN | OMAP_I2C_CON_STP);
 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w); /* Control Register */

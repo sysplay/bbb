@@ -395,10 +395,11 @@ int omap_i2c_read_msg(struct omap_i2c_dev *dev, struct i2c_msg *msg, int stop)
 {
 	u16 w;
 	u16 status;
-	u16 addr = 0X5000;
+	/* Always read from the offset 0x0060 */
+	u16 addr = 0X6000;
 	int k = 10, i2c_error = 0;
 
-	dev_dbg(dev->dev, "addr: 0x%04x, len: %d, flags: 0x%x, stop: %d\n",
+	printk("Addr: 0x%04x, len: %d, flags: 0x%x, stop: %d\n",
 		msg->addr, msg->len, msg->flags, stop);
 
 	if (msg->len == 0)

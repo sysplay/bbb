@@ -20,7 +20,7 @@ int i2c_write(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t count)
 	w |= OMAP_I2C_BUF_TXFIF_CLR;
 	omap_i2c_write_reg(dev, OMAP_I2C_BUF_REG, w);
 	omap_i2c_write_reg(dev, OMAP_I2C_SA_REG, 0x50); /* Slave Address */
-	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt); /* Count of 1*/
+	omap_i2c_write_reg(dev, OMAP_I2C_CNT_REG, cnt);
 	w = (OMAP_I2C_CON_MST | OMAP_I2C_CON_STT | OMAP_I2C_CON_EN | OMAP_I2C_CON_STP
 			| OMAP_I2C_CON_TRX);
 	printk("##### Sending %d bytes on the I2C bus ####\n", cnt);
@@ -56,6 +56,8 @@ wr_exit:
 
 int i2c_read(struct omap_i2c_dev *dev, struct i2c_msg *msg, size_t len)
 {	
+	/* Ignore the read for this hands-on as single byte transaction is not
+ * a valid eeprom transaction */
 	//Set the RX FIFO Threshold and clear the FIFO's
 	//Set the slave address
 	//update the count register

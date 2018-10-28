@@ -38,7 +38,8 @@ static ssize_t dummy_read(struct file* f, char *buf, size_t count, loff_t *f_pos
 	int ret;
 
 	if (*f_pos == 0) {
-		/* Initialize the tx_buf and transfer the message */
+		dev->tx_buf = 3;
+		ret = spi_sync(dev->spi, &dev->msg);
 		if (ret < 0)
 			return ret;
 
@@ -88,8 +89,14 @@ static int dummy_probe(struct spi_device *spi)
 
 	data = devm_kzalloc(&spi->dev, sizeof(struct dummy_data), GFP_KERNEL);
 	data->spi = spi;
-	/* Initialize the transfer and message structures */
 
+	data->transfer[0].tx_buf = &data->tx_buf;
+	data->transfer[0].len = sizeof(data->tx_buf);
+	data->transfer[1].rx_buf = data->rx_buf;
+	data->transfer[1].len = sizeof(data->rx_buf);
+
+	spi_message_init_with_transfers(&data->msg, data->transfer,
+					ARRAY_SIZE(data->transfer));
 	spi_set_drvdata(spi, data);
 
 	init_result = alloc_chrdev_region(&data->devt, 0, 1, "spi_dmy");
@@ -135,13 +142,19 @@ static int dummy_remove(struct spi_device *spi)
 }
 
 static const struct spi_device_id dummy_id[] = {
-	{},
+	{ "dummy-spi", 0 },
 	{ }
 };
 MODULE_DEVICE_TABLE(spi, dummy_id);
 
-/* Initialize the spi_driver structure */
 static struct spi_driver dummy_driver = {
+	.driver = {
+		.name = "dummy_client",
+		.owner = THIS_MODULE,
+	},
+	.probe = dummy_probe,
+	.remove = dummy_remove,
+	.id_table = dummy_id,
 };
 module_spi_driver(dummy_driver);
 

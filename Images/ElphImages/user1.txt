@@ -1,2 +1,3 @@
-uenvcmd=tftpboot 80200000 uImage; tftpboot 82000000 am335x-boneblack.dtb; bootm 0x80200000 - 0x82000000;
+ramboot=setenv bootargs console=ttyo0,115200n8
+uenvcmd=run ramboot; tftpboot 80200000 uImage; tftpboot 82000000 am335x-boneblack.dtb; bootm 0x80200000 - 0x82000000;
 

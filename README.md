@@ -21,8 +21,8 @@ Brief about the various workshops conducted @ SysPlay (https://sysplay.in)
 	- Info Link: https://sysplay.in/index.php?pagefile=ecfd_weekend_workshop
 	- Directories Used: Toolchain, Docs, EmbC
 
-+ Building Embedded Linux System (BELS)
-	- Info Link: https://sysplay.in/index.php?pagefile=bels_weekend_workshop
++ Embedded Linux Porting Hacks (ELPH)
+	- Info Link: https://sysplay.in/index.php?pagefile=elph_weekend_workshop
 	- Directories Used: Toolchain, Docs, Images, Original, Bootloaders, Kernel, RootFS
 
 + Embedded Linux Porting Advanced (ELPA)

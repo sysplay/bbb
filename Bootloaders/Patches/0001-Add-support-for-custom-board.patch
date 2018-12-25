@@ -1,0 +1,1316 @@
+From 37e12bb5dd550f7513a395952ff11871a7c4529d Mon Sep 17 00:00:00 2001
+From: Pradeep Tewani <pradeep@sysplay.in>
+Date: Tue, 25 Dec 2018 11:15:22 +0530
+Subject: [PATCH] Add support for custom board
+
+---
+ Bootloaders/u-boot/arch/arm/Kconfig                |   4 +
+ Bootloaders/u-boot/board/sysplay/am335x/Kconfig    |  28 ++
+ Bootloaders/u-boot/board/sysplay/am335x/Makefile   |  13 +
+ Bootloaders/u-boot/board/sysplay/am335x/board.c    | 518 +++++++++++++++++++++
+ Bootloaders/u-boot/board/sysplay/am335x/board.h    |  77 +++
+ Bootloaders/u-boot/board/sysplay/am335x/mux.c      | 176 +++++++
+ Bootloaders/u-boot/board/sysplay/am335x/u-boot.lds | 128 +++++
+ Bootloaders/u-boot/configs/sysplay_defconfig       |   4 +
+ Bootloaders/u-boot/include/configs/sysplay.h       | 275 +++++++++++
+ 9 files changed, 1223 insertions(+)
+ create mode 100644 Bootloaders/u-boot/board/sysplay/am335x/Kconfig
+ create mode 100644 Bootloaders/u-boot/board/sysplay/am335x/Makefile
+ create mode 100644 Bootloaders/u-boot/board/sysplay/am335x/board.c
+ create mode 100644 Bootloaders/u-boot/board/sysplay/am335x/board.h
+ create mode 100644 Bootloaders/u-boot/board/sysplay/am335x/mux.c
+ create mode 100644 Bootloaders/u-boot/board/sysplay/am335x/u-boot.lds
+ create mode 100644 Bootloaders/u-boot/configs/sysplay_defconfig
+ create mode 100644 Bootloaders/u-boot/include/configs/sysplay.h
+
+diff --git a/Bootloaders/u-boot/arch/arm/Kconfig b/Bootloaders/u-boot/arch/arm/Kconfig
+index 51ffdc4..e9be828 100644
+--- a/Bootloaders/u-boot/arch/arm/Kconfig
++++ b/Bootloaders/u-boot/arch/arm/Kconfig
+@@ -309,6 +309,9 @@ config TARGET_PENGWYN
+ config TARGET_AM335X_EVM
+ 	bool "Support am335x_evm"
+ 
++config TARGET_SYSPLAY
++	bool "Support sysplay board"
++
+ config TARGET_AM43XX_EVM
+ 	bool "Support am43xx_evm"
+ 
+@@ -527,5 +530,6 @@ config ARCH_UNIPHIER
+ endchoice
+ 
+ source "board/ti/am335x/Kconfig"
++source "board/sysplay/am335x/Kconfig"
+ 
+ endmenu
+diff --git a/Bootloaders/u-boot/board/sysplay/am335x/Kconfig b/Bootloaders/u-boot/board/sysplay/am335x/Kconfig
+new file mode 100644
+index 0000000..0db6b34
+--- /dev/null
++++ b/Bootloaders/u-boot/board/sysplay/am335x/Kconfig
+@@ -0,0 +1,28 @@
++if TARGET_SYSPLAY
++
++config SYS_CPU
++	default "armv7"
++
++config SYS_BOARD
++	default "am335x"
++
++config SYS_VENDOR
++	default "sysplay"
++
++config SYS_SOC
++	default "am33xx"
++
++config SYS_CONFIG_NAME
++	default "sysplay"
++
++config CONS_INDEX
++	int "UART used for console"
++	range 1 6
++	default 1
++	help
++	  The AM335x SoC has a total of 6 UARTs (UART0 to UART5 as referenced
++	  in documentation, etc) available to it.  Depending on your specific
++	  board you may want something other than UART0 as for example the IDK
++	  uses UART3 so enter 4 here.
++
++endif
+diff --git a/Bootloaders/u-boot/board/sysplay/am335x/Makefile b/Bootloaders/u-boot/board/sysplay/am335x/Makefile
+new file mode 100644
+index 0000000..804ac37
+--- /dev/null
++++ b/Bootloaders/u-boot/board/sysplay/am335x/Makefile
+@@ -0,0 +1,13 @@
++#
++# Makefile
++#
++# Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
++#
++# SPDX-License-Identifier:	GPL-2.0+
++#
++
++ifeq ($(CONFIG_SKIP_LOWLEVEL_INIT),)
++obj-y	:= mux.o
++endif
++
++obj-y	+= board.o
+diff --git a/Bootloaders/u-boot/board/sysplay/am335x/board.c b/Bootloaders/u-boot/board/sysplay/am335x/board.c
+new file mode 100644
+index 0000000..3262786
+--- /dev/null
++++ b/Bootloaders/u-boot/board/sysplay/am335x/board.c
+@@ -0,0 +1,518 @@
++/*
++ * board.c
++ *
++ * Board functions for TI AM335X based boards
++ *
++ * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ */
++
++#include <common.h>
++#include <errno.h>
++#include <spl.h>
++#include <asm/arch/cpu.h>
++#include <asm/arch/hardware.h>
++#include <asm/arch/omap.h>
++#include <asm/arch/ddr_defs.h>
++#include <asm/arch/clock.h>
++#include <asm/arch/gpio.h>
++#include <asm/arch/mmc_host_def.h>
++#include <asm/arch/sys_proto.h>
++#include <asm/arch/mem.h>
++#include <asm/io.h>
++#include <asm/emif.h>
++#include <asm/gpio.h>
++#include <i2c.h>
++#include <miiphy.h>
++#include <cpsw.h>
++#include <power/tps65217.h>
++#include <environment.h>
++#include <watchdog.h>
++#include <environment.h>
++#include "board.h"
++
++DECLARE_GLOBAL_DATA_PTR;
++
++/* GPIO that controls power to DDR on EVM-SK */
++#define GPIO_DDR_VTT_EN		7
++
++static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
++
++/*
++ * Read header information from EEPROM into global structure.
++ */
++static int read_eeprom(struct am335x_baseboard_id *header)
++{
++	/* Check if baseboard eeprom is available */
++	if (i2c_probe(CONFIG_SYS_I2C_EEPROM_ADDR)) {
++		puts("Could not probe the EEPROM; something fundamentally "
++			"wrong on the I2C bus.\n");
++		return -ENODEV;
++	}
++
++	/* read the eeprom using i2c */
++	if (i2c_read(CONFIG_SYS_I2C_EEPROM_ADDR, 0, 2, (uchar *)header,
++		     sizeof(struct am335x_baseboard_id))) {
++		puts("Could not read the EEPROM; something fundamentally"
++			" wrong on the I2C bus.\n");
++		return -EIO;
++	}
++
++	if (header->magic != 0xEE3355AA) {
++		/*
++		 * read the eeprom using i2c again,
++		 * but use only a 1 byte address
++		 */
++		if (i2c_read(CONFIG_SYS_I2C_EEPROM_ADDR, 0, 1, (uchar *)header,
++			     sizeof(struct am335x_baseboard_id))) {
++			puts("Could not read the EEPROM; something "
++				"fundamentally wrong on the I2C bus.\n");
++			return -EIO;
++		}
++
++		if (header->magic != 0xEE3355AA) {
++			printf("Incorrect magic number (0x%x) in EEPROM\n",
++					header->magic);
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++int do_userbutton (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
++{
++	int button = 0;
++	gpio_direction_input(72);
++	button = gpio_get_value(72);
++	return button;
++}
++
++U_BOOT_CMD(
++	userbutton, CONFIG_SYS_MAXARGS, 1,      do_userbutton,
++	"Return the status of the BeagleBoard USER button",
++	""
++);
++
++
++#ifndef CONFIG_SKIP_LOWLEVEL_INIT
++
++static const struct ddr_data ddr3_beagleblack_data = {
++	.datardsratio0 = MT41K256M16HA125E_RD_DQS,
++	.datawdsratio0 = MT41K256M16HA125E_WR_DQS,
++	.datafwsratio0 = MT41K256M16HA125E_PHY_FIFO_WE,
++	.datawrsratio0 = MT41K256M16HA125E_PHY_WR_DATA,
++};
++
++
++static const struct cmd_control ddr3_beagleblack_cmd_ctrl_data = {
++	.cmd0csratio = MT41K256M16HA125E_RATIO,
++	.cmd0iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
++
++	.cmd1csratio = MT41K256M16HA125E_RATIO,
++	.cmd1iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
++
++	.cmd2csratio = MT41K256M16HA125E_RATIO,
++	.cmd2iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
++};
++
++
++static struct emif_regs ddr3_beagleblack_emif_reg_data = {
++	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
++	.ref_ctrl = MT41K256M16HA125E_EMIF_SDREF,
++	.sdram_tim1 = MT41K256M16HA125E_EMIF_TIM1,
++	.sdram_tim2 = MT41K256M16HA125E_EMIF_TIM2,
++	.sdram_tim3 = MT41K256M16HA125E_EMIF_TIM3,
++	.zq_config = MT41K256M16HA125E_ZQ_CFG,
++	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
++	};
++
++	
++#ifdef CONFIG_SPL_OS_BOOT
++int spl_start_uboot(void)
++{
++	/* break into full u-boot on 'c' */
++	if (serial_tstc() && serial_getc() == 'c')
++		return 1;
++
++#ifdef CONFIG_SPL_ENV_SUPPORT
++	env_init();
++	env_relocate_spec();
++	if (getenv_yesno("boot_os") != 1)
++		return 1;
++#endif
++
++	return 0;
++}
++#endif
++
++#define OSC	(V_OSCK/1000000)
++const struct dpll_params dpll_ddr = {
++		266, OSC-1, 1, -1, -1, -1, -1};
++const struct dpll_params dpll_ddr_evm_sk = {
++		303, OSC-1, 1, -1, -1, -1, -1};
++const struct dpll_params dpll_ddr_bone_black = {
++		400, OSC-1, 1, -1, -1, -1, -1};
++
++void am33xx_spl_board_init(void)
++{
++	int mpu_vdd;
++
++	/* Get the frequency */
++	dpll_mpu_opp100.m = am335x_get_efuse_mpu_max_freq(cdev);
++
++	/* BeagleBone PMIC Code */
++	int usb_cur_lim;
++
++
++	if (i2c_probe(TPS65217_CHIP_PM))
++		return;
++	/*
++	 * Override what we have detected since we know if we have
++	 * a Beaglebone Black it supports 1GHz.
++	 */
++	dpll_mpu_opp100.m = MPUPLL_M_1000;
++
++	/*
++	 * Increase USB current limit to 1300mA or 1800mA and set
++	 * the MPU voltage controller as needed.
++	 */
++	usb_cur_lim = TPS65217_USB_INPUT_CUR_LIMIT_1800MA;
++	mpu_vdd = TPS65217_DCDC_VOLT_SEL_1325MV;
++
++	if (tps65217_reg_write(TPS65217_PROT_LEVEL_NONE,
++				TPS65217_POWER_PATH,
++				usb_cur_lim,
++				TPS65217_USB_INPUT_CUR_LIMIT_MASK))
++		puts("tps65217_reg_write failure\n");
++
++	/* Set DCDC3 (CORE) voltage to 1.125V */
++	if (tps65217_voltage_update(TPS65217_DEFDCDC3,
++				TPS65217_DCDC_VOLT_SEL_1125MV)) {
++		puts("tps65217_voltage_update failure\n");
++		return;
++	}
++
++	/* Set CORE Frequencies to OPP100 */
++	do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
++
++	/* Set DCDC2 (MPU) voltage */
++	if (tps65217_voltage_update(TPS65217_DEFDCDC2, mpu_vdd)) {
++		puts("tps65217_voltage_update failure\n");
++		return;
++	}
++
++	/*
++	 * Set LDO3 to 1.8V and LDO4 to 3.3V for Beaglebone Black.
++	 */
++	if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
++				TPS65217_DEFLS1,
++				TPS65217_LDO_VOLTAGE_OUT_1_8,
++				TPS65217_LDO_MASK))
++		puts("tps65217_reg_write failure\n");
++
++	if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
++				TPS65217_DEFLS2,
++				TPS65217_LDO_VOLTAGE_OUT_3_3,
++				TPS65217_LDO_MASK))
++		puts("tps65217_reg_write failure\n");
++	/* Set MPU Frequency to what we detected now that voltages are set */
++	do_setup_dpll(&dpll_mpu_regs, &dpll_mpu_opp100);
++}
++
++const struct dpll_params *get_dpll_ddr_params(void)
++{
++	enable_i2c0_pin_mux();
++	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
++
++	return &dpll_ddr_bone_black;
++}
++
++int blink_led(void)
++{
++	char ch = 'n';
++
++	void *p;
++
++	/* Alternately turn the LEDs on and off */
++	p = (unsigned long *)0X4804C000;
++	*(unsigned long *)(p + 0x134) &= ~(1 << (53 % 32));
++	*(unsigned long *)(p + 0x134) &= ~(1 << (54 % 32));
++	*(unsigned long *)(p + 0x134) &= ~(1 << (55 % 32));
++
++	while (ch != 'x')
++	{
++
++		ch = getc();
++		printf("Welcome to Sysplay");
++		/* turn LED1 on and LED2 off */
++		*(unsigned long *)(p + 0x190) |= (1 << (54 % 32));
++		*(unsigned long *)(p + 0x194) |= (1 << (55 % 32));
++		/* delay for a while */
++		ch = getc();
++
++		/* turn LED1 off and LED2 on */
++		*(unsigned long *)(p + 0x194) |= (1 << (54 % 32));
++		*(unsigned long *)(p + 0x190) = (1 << (55 % 32));
++	}
++	return 0;
++}
++
++void set_uart_mux_conf(void)
++{
++#if CONFIG_CONS_INDEX == 1
++	enable_uart0_pin_mux();
++#elif CONFIG_CONS_INDEX == 2
++	enable_uart1_pin_mux();
++#elif CONFIG_CONS_INDEX == 3
++	enable_uart2_pin_mux();
++#elif CONFIG_CONS_INDEX == 4
++	enable_uart3_pin_mux();
++#elif CONFIG_CONS_INDEX == 5
++	enable_uart4_pin_mux();
++#elif CONFIG_CONS_INDEX == 6
++	enable_uart5_pin_mux();
++#endif
++}
++
++void set_mux_conf_regs(void)
++{
++	enable_board_pin_mux();
++}
++
++const struct ctrl_ioregs ioregs_evmsk = {
++	.cm0ioctl		= MT41J128MJT125_IOCTRL_VALUE,
++	.cm1ioctl		= MT41J128MJT125_IOCTRL_VALUE,
++	.cm2ioctl		= MT41J128MJT125_IOCTRL_VALUE,
++	.dt0ioctl		= MT41J128MJT125_IOCTRL_VALUE,
++	.dt1ioctl		= MT41J128MJT125_IOCTRL_VALUE,
++};
++
++const struct ctrl_ioregs ioregs_bonelt = {
++	.cm0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
++	.cm1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
++	.cm2ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
++	.dt0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
++	.dt1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
++};
++
++const struct ctrl_ioregs ioregs_evm15 = {
++	.cm0ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
++	.cm1ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
++	.cm2ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
++	.dt0ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
++	.dt1ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
++};
++
++const struct ctrl_ioregs ioregs = {
++	.cm0ioctl		= MT47H128M16RT25E_IOCTRL_VALUE,
++	.cm1ioctl		= MT47H128M16RT25E_IOCTRL_VALUE,
++	.cm2ioctl		= MT47H128M16RT25E_IOCTRL_VALUE,
++	.dt0ioctl		= MT47H128M16RT25E_IOCTRL_VALUE,
++	.dt1ioctl		= MT47H128M16RT25E_IOCTRL_VALUE,
++};
++
++void sdram_init(void)
++{
++	config_ddr(400, &ioregs_bonelt,
++			&ddr3_beagleblack_data,
++			&ddr3_beagleblack_cmd_ctrl_data,
++			&ddr3_beagleblack_emif_reg_data, 0);
++}
++#endif
++
++/*
++ * Basic board specific setup.  Pinmux has been handled already.
++ */
++int board_init(void)
++{
++#if defined(CONFIG_HW_WATCHDOG)
++	hw_watchdog_init();
++#endif
++
++	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
++	return 0;
++}
++
++#ifdef CONFIG_BOARD_LATE_INIT
++int board_late_init(void)
++{
++#ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
++	char safe_string[HDR_NAME_LEN + 1];
++	struct am335x_baseboard_id header;
++
++	if (read_eeprom(&header) < 0)
++		puts("Could not get board ID.\n");
++
++	/* Now set variables based on the header. */
++	strncpy(safe_string, (char *)header.name, sizeof(header.name));
++	safe_string[sizeof(header.name)] = 0;
++	setenv("board_name", safe_string);
++
++	strncpy(safe_string, (char *)header.version, sizeof(header.version));
++	safe_string[sizeof(header.version)] = 0;
++	setenv("board_rev", safe_string);
++#endif
++
++	return 0;
++}
++#endif
++
++#if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
++	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
++static void cpsw_control(int enabled)
++{
++	/* VTP can be added here */
++
++	return;
++}
++
++static struct cpsw_slave_data cpsw_slaves[] = {
++	{
++		.slave_reg_ofs	= 0x208,
++		.sliver_reg_ofs	= 0xd80,
++		.phy_addr	= 0,
++	},
++	{
++		.slave_reg_ofs	= 0x308,
++		.sliver_reg_ofs	= 0xdc0,
++		.phy_addr	= 1,
++	},
++};
++
++static struct cpsw_platform_data cpsw_data = {
++	.mdio_base		= CPSW_MDIO_BASE,
++	.cpsw_base		= CPSW_BASE,
++	.mdio_div		= 0xff,
++	.channels		= 8,
++	.cpdma_reg_ofs		= 0x800,
++	.slaves			= 1,
++	.slave_data		= cpsw_slaves,
++	.ale_reg_ofs		= 0xd00,
++	.ale_entries		= 1024,
++	.host_port_reg_ofs	= 0x108,
++	.hw_stats_reg_ofs	= 0x900,
++	.bd_ram_ofs		= 0x2000,
++	.mac_control		= (1 << 5),
++	.control		= cpsw_control,
++	.host_port_num		= 0,
++	.version		= CPSW_CTRL_VERSION_2,
++};
++#endif
++
++/*
++ * This function will:
++ * Read the eFuse for MAC addresses, and set ethaddr/eth1addr/usbnet_devaddr
++ * in the environment
++ * Perform fixups to the PHY present on certain boards.  We only need this
++ * function in:
++ * - SPL with either CPSW or USB ethernet support
++ * - Full U-Boot, with either CPSW or USB ethernet
++ * Build in only these cases to avoid warnings about unused variables
++ * when we build an SPL that has neither option but full U-Boot will.
++ */
++#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USBETH_SUPPORT)) \
++		&& defined(CONFIG_SPL_BUILD)) || \
++	((defined(CONFIG_DRIVER_TI_CPSW) || \
++	  defined(CONFIG_USB_ETHER) && defined(CONFIG_MUSB_GADGET)) && \
++	 !defined(CONFIG_SPL_BUILD))
++int board_eth_init(bd_t *bis)
++{
++	int rv, n = 0;
++	uint8_t mac_addr[6];
++	uint32_t mac_hi, mac_lo;
++	__maybe_unused struct am335x_baseboard_id header;
++
++	/* try reading mac address from efuse */
++	mac_lo = readl(&cdev->macid0l);
++	mac_hi = readl(&cdev->macid0h);
++	mac_addr[0] = mac_hi & 0xFF;
++	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
++	mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
++	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
++	mac_addr[4] = mac_lo & 0xFF;
++	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
++
++#if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
++	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
++	if (!getenv("ethaddr")) {
++		printf("<ethaddr> not set. Validating first E-fuse MAC\n");
++
++		if (is_valid_ether_addr(mac_addr))
++			eth_setenv_enetaddr("ethaddr", mac_addr);
++	}
++
++#ifdef CONFIG_DRIVER_TI_CPSW
++
++	mac_lo = readl(&cdev->macid1l);
++	mac_hi = readl(&cdev->macid1h);
++	mac_addr[0] = mac_hi & 0xFF;
++	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
++	mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
++	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
++	mac_addr[4] = mac_lo & 0xFF;
++	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
++
++	if (!getenv("eth1addr")) {
++		if (is_valid_ether_addr(mac_addr))
++			eth_setenv_enetaddr("eth1addr", mac_addr);
++	}
++
++	if (read_eeprom(&header) < 0)
++		puts("Could not get board ID.\n");
++
++	if (board_is_bone(&header) || board_is_bone_lt(&header) ||
++	    board_is_idk(&header)) {
++		writel(MII_MODE_ENABLE, &cdev->miisel);
++		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
++				PHY_INTERFACE_MODE_MII;
++	} else {
++		writel((RGMII_MODE_ENABLE | RGMII_INT_DELAY), &cdev->miisel);
++		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
++				PHY_INTERFACE_MODE_RGMII;
++	}
++
++	rv = cpsw_register(&cpsw_data);
++	if (rv < 0)
++		printf("Error %d registering CPSW switch\n", rv);
++	else
++		n += rv;
++#endif
++
++	/*
++	 *
++	 * CPSW RGMII Internal Delay Mode is not supported in all PVT
++	 * operating points.  So we must set the TX clock delay feature
++	 * in the AR8051 PHY.  Since we only support a single ethernet
++	 * device in U-Boot, we only do this for the first instance.
++	 */
++#define AR8051_PHY_DEBUG_ADDR_REG	0x1d
++#define AR8051_PHY_DEBUG_DATA_REG	0x1e
++#define AR8051_DEBUG_RGMII_CLK_DLY_REG	0x5
++#define AR8051_RGMII_TX_CLK_DLY		0x100
++
++	if (board_is_evm_sk(&header) || board_is_gp_evm(&header)) {
++		const char *devname;
++		devname = miiphy_get_current_dev();
++
++		miiphy_write(devname, 0x0, AR8051_PHY_DEBUG_ADDR_REG,
++				AR8051_DEBUG_RGMII_CLK_DLY_REG);
++		miiphy_write(devname, 0x0, AR8051_PHY_DEBUG_DATA_REG,
++				AR8051_RGMII_TX_CLK_DLY);
++	}
++#endif
++#if defined(CONFIG_USB_ETHER) && \
++	(!defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_USBETH_SUPPORT))
++	if (is_valid_ether_addr(mac_addr))
++		eth_setenv_enetaddr("usbnet_devaddr", mac_addr);
++
++	rv = usb_eth_initialize(bis);
++	if (rv < 0)
++		printf("Error %d registering USB_ETHER\n", rv);
++	else
++		n += rv;
++#endif
++	return n;
++}
++#endif
+diff --git a/Bootloaders/u-boot/board/sysplay/am335x/board.h b/Bootloaders/u-boot/board/sysplay/am335x/board.h
+new file mode 100644
+index 0000000..3ffed13
+--- /dev/null
++++ b/Bootloaders/u-boot/board/sysplay/am335x/board.h
+@@ -0,0 +1,77 @@
++/*
++ * board.h
++ *
++ * TI AM335x boards information header
++ *
++ * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ */
++
++#ifndef _BOARD_H_
++#define _BOARD_H_
++
++/*
++ * TI AM335x parts define a system EEPROM that defines certain sub-fields.
++ * We use these fields to in turn see what board we are on, and what
++ * that might require us to set or not set.
++ */
++#define HDR_NO_OF_MAC_ADDR	3
++#define HDR_ETH_ALEN		6
++#define HDR_NAME_LEN		8
++
++struct am335x_baseboard_id {
++	unsigned int  magic;
++	char name[HDR_NAME_LEN];
++	char version[4];
++	char serial[12];
++	char config[32];
++	char mac_addr[HDR_NO_OF_MAC_ADDR][HDR_ETH_ALEN];
++};
++
++static inline int board_is_bone(struct am335x_baseboard_id *header)
++{
++	return !strncmp(header->name, "A335BONE", HDR_NAME_LEN);
++}
++
++static inline int board_is_bone_lt(struct am335x_baseboard_id *header)
++{
++	return !strncmp(header->name, "A335BNLT", HDR_NAME_LEN);
++}
++
++static inline int board_is_evm_sk(struct am335x_baseboard_id *header)
++{
++	return !strncmp("A335X_SK", header->name, HDR_NAME_LEN);
++}
++
++static inline int board_is_idk(struct am335x_baseboard_id *header)
++{
++	return !strncmp(header->config, "SKU#02", 6);
++}
++
++static inline int board_is_gp_evm(struct am335x_baseboard_id *header)
++{
++	return !strncmp("A33515BB", header->name, HDR_NAME_LEN);
++}
++
++static inline int board_is_evm_15_or_later(struct am335x_baseboard_id *header)
++{
++	return (board_is_gp_evm(header) &&
++		strncmp("1.5", header->version, 3) <= 0);
++}
++
++/*
++ * We have three pin mux functions that must exist.  We must be able to enable
++ * uart0, for initial output and i2c0 to read the main EEPROM.  We then have a
++ * main pinmux function that can be overridden to enable all other pinmux that
++ * is required on the board.
++ */
++void enable_uart0_pin_mux(void);
++void enable_uart1_pin_mux(void);
++void enable_uart2_pin_mux(void);
++void enable_uart3_pin_mux(void);
++void enable_uart4_pin_mux(void);
++void enable_uart5_pin_mux(void);
++void enable_i2c0_pin_mux(void);
++void enable_board_pin_mux(void);
++#endif
+diff --git a/Bootloaders/u-boot/board/sysplay/am335x/mux.c b/Bootloaders/u-boot/board/sysplay/am335x/mux.c
+new file mode 100644
+index 0000000..0d8fa19
+--- /dev/null
++++ b/Bootloaders/u-boot/board/sysplay/am335x/mux.c
+@@ -0,0 +1,176 @@
++/*
++ * mux.c
++ *
++ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ */
++
++#include <common.h>
++#include <asm/arch/sys_proto.h>
++#include <asm/arch/hardware.h>
++#include <asm/arch/mux.h>
++#include <asm/io.h>
++#include <i2c.h>
++#include "board.h"
++
++static struct module_pin_mux uart0_pin_mux[] = {
++	{OFFSET(uart0_rxd), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* UART0_RXD */
++	{OFFSET(uart0_txd), (MODE(0) | PULLUDEN)},		/* UART0_TXD */
++	{-1},
++};
++
++static struct module_pin_mux uart1_pin_mux[] = {
++	{OFFSET(uart1_rxd), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* UART1_RXD */
++	{OFFSET(uart1_txd), (MODE(0) | PULLUDEN)},		/* UART1_TXD */
++	{-1},
++};
++
++static struct module_pin_mux uart2_pin_mux[] = {
++	{OFFSET(spi0_sclk), (MODE(1) | PULLUP_EN | RXACTIVE)},	/* UART2_RXD */
++	{OFFSET(spi0_d0), (MODE(1) | PULLUDEN)},		/* UART2_TXD */
++	{-1},
++};
++
++static struct module_pin_mux uart3_pin_mux[] = {
++	{OFFSET(spi0_cs1), (MODE(1) | PULLUP_EN | RXACTIVE)},	/* UART3_RXD */
++	{OFFSET(ecap0_in_pwm0_out), (MODE(1) | PULLUDEN)},	/* UART3_TXD */
++	{-1},
++};
++
++static struct module_pin_mux uart4_pin_mux[] = {
++	{OFFSET(gpmc_wait0), (MODE(6) | PULLUP_EN | RXACTIVE)},	/* UART4_RXD */
++	{OFFSET(gpmc_wpn), (MODE(6) | PULLUDEN)},		/* UART4_TXD */
++	{-1},
++};
++
++static struct module_pin_mux uart5_pin_mux[] = {
++	{OFFSET(lcd_data9), (MODE(4) | PULLUP_EN | RXACTIVE)},	/* UART5_RXD */
++	{OFFSET(lcd_data8), (MODE(4) | PULLUDEN)},		/* UART5_TXD */
++	{-1},
++};
++
++static struct module_pin_mux mmc0_pin_mux[] = {
++	{OFFSET(mmc0_dat3), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT3 */
++	{OFFSET(mmc0_dat2), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT2 */
++	{OFFSET(mmc0_dat1), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT1 */
++	{OFFSET(mmc0_dat0), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT0 */
++	{OFFSET(mmc0_clk), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CLK */
++	{OFFSET(mmc0_cmd), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CMD */
++	{OFFSET(mcasp0_aclkr), (MODE(4) | RXACTIVE)},		/* MMC0_WP */
++	{OFFSET(spi0_cs1), (MODE(5) | RXACTIVE | PULLUP_EN)},	/* MMC0_CD */
++	{-1},
++};
++
++
++static struct module_pin_mux mmc1_pin_mux[] = {
++	{OFFSET(gpmc_ad3), (MODE(1) | RXACTIVE | PULLUP_EN)},	/* MMC1_DAT3 */
++	{OFFSET(gpmc_ad2), (MODE(1) | RXACTIVE | PULLUP_EN)},	/* MMC1_DAT2 */
++	{OFFSET(gpmc_ad1), (MODE(1) | RXACTIVE | PULLUP_EN)},	/* MMC1_DAT1 */
++	{OFFSET(gpmc_ad0), (MODE(1) | RXACTIVE | PULLUP_EN)},	/* MMC1_DAT0 */
++	{OFFSET(gpmc_csn1), (MODE(2) | RXACTIVE | PULLUP_EN)},	/* MMC1_CLK */
++	{OFFSET(gpmc_csn2), (MODE(2) | RXACTIVE | PULLUP_EN)},	/* MMC1_CMD */
++	{OFFSET(gpmc_csn0), (MODE(7) | RXACTIVE | PULLUP_EN)},	/* MMC1_WP */
++	{OFFSET(gpmc_advn_ale), (MODE(7) | RXACTIVE | PULLUP_EN)},	/* MMC1_CD */
++	{-1},
++};
++
++static struct module_pin_mux i2c0_pin_mux[] = {
++	{OFFSET(i2c0_sda), (MODE(0) | RXACTIVE |
++			PULLUDEN | SLEWCTRL)}, /* I2C_DATA */
++	{OFFSET(i2c0_scl), (MODE(0) | RXACTIVE |
++			PULLUDEN | SLEWCTRL)}, /* I2C_SCLK */
++	{-1},
++};
++
++static struct module_pin_mux i2c1_pin_mux[] = {
++	{OFFSET(spi0_d1), (MODE(2) | RXACTIVE |
++			PULLUDEN | SLEWCTRL)},	/* I2C_DATA */
++	{OFFSET(spi0_cs0), (MODE(2) | RXACTIVE |
++			PULLUDEN | SLEWCTRL)},	/* I2C_SCLK */
++	{-1},
++};
++
++static struct module_pin_mux gpio_led_pin_mux[] = {
++	{OFFSET(gpmc_a5), (MODE(7) | PULLUDDIS)},       /* GPI1_21 */
++	{OFFSET(gpmc_a6), (MODE(7) | PULLUDDIS)},       /* GPI1_22 */
++	{OFFSET(gpmc_a7), (MODE(7) | PULLUDDIS)},       /* GPI1_23 */
++	{OFFSET(gpmc_a8), (MODE(7) | PULLUDDIS)},       /* GPI1_24 */
++	{-1},
++};
++
++static struct module_pin_mux mii1_pin_mux[] = {
++	{OFFSET(mii1_rxerr), MODE(0) | RXACTIVE},	/* MII1_RXERR */
++	{OFFSET(mii1_txen), MODE(0)},			/* MII1_TXEN */
++	{OFFSET(mii1_rxdv), MODE(0) | RXACTIVE},	/* MII1_RXDV */
++	{OFFSET(mii1_txd3), MODE(0)},			/* MII1_TXD3 */
++	{OFFSET(mii1_txd2), MODE(0)},			/* MII1_TXD2 */
++	{OFFSET(mii1_txd1), MODE(0)},			/* MII1_TXD1 */
++	{OFFSET(mii1_txd0), MODE(0)},			/* MII1_TXD0 */
++	{OFFSET(mii1_txclk), MODE(0) | RXACTIVE},	/* MII1_TXCLK */
++	{OFFSET(mii1_rxclk), MODE(0) | RXACTIVE},	/* MII1_RXCLK */
++	{OFFSET(mii1_rxd3), MODE(0) | RXACTIVE},	/* MII1_RXD3 */
++	{OFFSET(mii1_rxd2), MODE(0) | RXACTIVE},	/* MII1_RXD2 */
++	{OFFSET(mii1_rxd1), MODE(0) | RXACTIVE},	/* MII1_RXD1 */
++	{OFFSET(mii1_rxd0), MODE(0) | RXACTIVE},	/* MII1_RXD0 */
++	{OFFSET(mdio_data), MODE(0) | RXACTIVE | PULLUP_EN}, /* MDIO_DATA */
++	{OFFSET(mdio_clk), MODE(0) | PULLUP_EN},	/* MDIO_CLK */
++	{-1},
++};
++
++void enable_uart0_pin_mux(void)
++{
++	configure_module_pin_mux(uart0_pin_mux);
++}
++
++void enable_uart1_pin_mux(void)
++{
++	configure_module_pin_mux(uart1_pin_mux);
++}
++
++void enable_uart2_pin_mux(void)
++{
++	configure_module_pin_mux(uart2_pin_mux);
++}
++
++void enable_uart3_pin_mux(void)
++{
++	configure_module_pin_mux(uart3_pin_mux);
++}
++
++void enable_uart4_pin_mux(void)
++{
++	configure_module_pin_mux(uart4_pin_mux);
++}
++
++void enable_uart5_pin_mux(void)
++{
++	configure_module_pin_mux(uart5_pin_mux);
++}
++
++void enable_i2c0_pin_mux(void)
++{
++	configure_module_pin_mux(i2c0_pin_mux);
++}
++
++/* CPLD registers */
++#define I2C_CPLD_ADDR	0x35
++#define CFG_REG		0x10
++
++
++void enable_board_pin_mux()
++{
++	/* Beaglebone LT pinmux */
++	configure_module_pin_mux(i2c1_pin_mux);
++	configure_module_pin_mux(gpio_led_pin_mux);
++	configure_module_pin_mux(mii1_pin_mux);
++	configure_module_pin_mux(mmc0_pin_mux);
++	configure_module_pin_mux(mmc1_pin_mux);
++}
+diff --git a/Bootloaders/u-boot/board/sysplay/am335x/u-boot.lds b/Bootloaders/u-boot/board/sysplay/am335x/u-boot.lds
+new file mode 100644
+index 0000000..2df6ae3
+--- /dev/null
++++ b/Bootloaders/u-boot/board/sysplay/am335x/u-boot.lds
+@@ -0,0 +1,128 @@
++/*
++ * Copyright (c) 2004-2008 Texas Instruments
++ *
++ * (C) Copyright 2002
++ * Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
++OUTPUT_ARCH(arm)
++ENTRY(_start)
++SECTIONS
++{
++	. = 0x00000000;
++
++	. = ALIGN(4);
++	.text :
++	{
++		*(.__image_copy_start)
++		*(.vectors)
++		CPUDIR/start.o (.text*)
++		board/sysplay/am335x/built-in.o (.text*)
++		*(.text*)
++	}
++
++	. = ALIGN(4);
++	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
++
++	. = ALIGN(4);
++	.data : {
++		*(.data*)
++	}
++
++	. = ALIGN(4);
++
++	. = .;
++
++	. = ALIGN(4);
++	.u_boot_list : {
++		KEEP(*(SORT(.u_boot_list*)));
++	}
++
++	. = ALIGN(4);
++
++	.image_copy_end :
++	{
++		*(.__image_copy_end)
++	}
++
++	.rel_dyn_start :
++	{
++		*(.__rel_dyn_start)
++	}
++
++	.rel.dyn : {
++		*(.rel*)
++	}
++
++	.rel_dyn_end :
++	{
++		*(.__rel_dyn_end)
++	}
++
++	.hash : { *(.hash*) }
++
++	.end :
++	{
++		*(.__end)
++	}
++
++	_image_binary_end = .;
++
++	/*
++	 * Deprecated: this MMU section is used by pxa at present but
++	 * should not be used by new boards/CPUs.
++	 */
++	. = ALIGN(4096);
++	.mmutable : {
++		*(.mmutable)
++	}
++
++/*
++ * Compiler-generated __bss_start and __bss_end, see arch/arm/lib/bss.c
++ * __bss_base and __bss_limit are for linker only (overlay ordering)
++ */
++
++	.bss_start __rel_dyn_start (OVERLAY) : {
++		KEEP(*(.__bss_start));
++		__bss_base = .;
++	}
++
++	.bss __bss_base (OVERLAY) : {
++		*(.bss*)
++		 . = ALIGN(4);
++		 __bss_limit = .;
++	}
++
++	.bss_end __bss_limit (OVERLAY) : {
++		KEEP(*(.__bss_end));
++	}
++
++	.dynsym _image_binary_end : { *(.dynsym) }
++	.dynbss : { *(.dynbss) }
++	.dynstr : { *(.dynstr*) }
++	.dynamic : { *(.dynamic*) }
++	.gnu.hash : { *(.gnu.hash) }
++	.plt : { *(.plt*) }
++	.interp : { *(.interp*) }
++	.gnu : { *(.gnu*) }
++	.ARM.exidx : { *(.ARM.exidx*) }
++}
+diff --git a/Bootloaders/u-boot/configs/sysplay_defconfig b/Bootloaders/u-boot/configs/sysplay_defconfig
+new file mode 100644
+index 0000000..a76c91f
+--- /dev/null
++++ b/Bootloaders/u-boot/configs/sysplay_defconfig
+@@ -0,0 +1,4 @@
++CONFIG_SPL=y
++CONFIG_CONS_INDEX=1
+++S:CONFIG_ARM=y
+++S:CONFIG_TARGET_SYSPLAY=y
+diff --git a/Bootloaders/u-boot/include/configs/sysplay.h b/Bootloaders/u-boot/include/configs/sysplay.h
+new file mode 100644
+index 0000000..6c1f19a
+--- /dev/null
++++ b/Bootloaders/u-boot/include/configs/sysplay.h
+@@ -0,0 +1,275 @@
++/*
++ * am335x_evm.h
++ *
++ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __CONFIG_AM335X_EVM_H
++#define __CONFIG_AM335X_EVM_H
++
++#include <configs/ti_am335x_common.h>
++
++#ifndef CONFIG_SPL_BUILD
++# define CONFIG_FIT
++# define CONFIG_TIMESTAMP
++# define CONFIG_LZO
++# ifdef CONFIG_ENABLE_VBOOT
++#  define CONFIG_FIT_SIGNATURE
++#  define CONFIG_RSA
++# endif
++#endif
++
++#define CONFIG_SYS_BOOTM_LEN		(16 << 20)
++
++#define MACH_TYPE_TIAM335EVM		3589	/* Until the next sync */
++#define CONFIG_MACH_TYPE		MACH_TYPE_TIAM335EVM
++#define CONFIG_BOARD_LATE_INIT
++
++/* Clock Defines */
++#define V_OSCK				24000000  /* Clock output from T2 */
++#define V_SCLK				(V_OSCK)
++
++/* Custom script for NOR */
++#define CONFIG_SYS_LDSCRIPT		"board/sysplay/am335x/u-boot.lds"
++
++/* Always 128 KiB env size */
++#define CONFIG_ENV_SIZE			(128 << 10)
++
++/* Enhance our eMMC support / experience. */
++#define CONFIG_CMD_GPT
++#define CONFIG_EFI_PARTITION
++#define CONFIG_PARTITION_UUIDS
++#define CONFIG_CMD_PART
++
++#ifdef CONFIG_NAND
++#define NANDARGS \
++	"mtdids=" MTDIDS_DEFAULT "\0" \
++	"mtdparts=" MTDPARTS_DEFAULT "\0" \
++	"nandargs=setenv bootargs console=${console} " \
++		"${optargs} " \
++		"root=${nandroot} " \
++		"rootfstype=${nandrootfstype}\0" \
++	"nandroot=ubi0:rootfs rw ubi.mtd=9,2048\0" \
++	"nandrootfstype=ubifs rootwait=1\0" \
++	"nandboot=echo Booting from nand ...; " \
++		"run nandargs; " \
++		"nand read ${fdtaddr} u-boot-spl-os; " \
++		"nand read ${loadaddr} kernel; " \
++		"bootz ${loadaddr} - ${fdtaddr}\0"
++#else
++#define NANDARGS ""
++#endif
++
++#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
++
++#ifndef CONFIG_SPL_BUILD
++#define CONFIG_EXTRA_ENV_SETTINGS \
++	DEFAULT_LINUX_BOOT_ENV \
++	"boot_fdt=try\0" \
++	"bootpart=0:2\0" \
++	"bootdir=/boot\0" \
++	"bootfile=zImage\0" \
++	"fdtfile=undefined\0" \
++	"console=ttyO0,115200n8\0" \
++	"partitions=" \
++		"uuid_disk=${uuid_gpt_disk};" \
++		"name=rootfs,start=2MiB,size=-,uuid=${uuid_gpt_rootfs}\0" \
++	"optargs=\0" \
++	"mmcdev=0\0" \
++	"mmcroot=/dev/mmcblk0p2 ro\0" \
++	"mmcrootfstype=ext4 rootwait\0" \
++	"rootpath=/export/rootfs\0" \
++	"nfsopts=nolock\0" \
++	"static_ip=${ipaddr}:${serverip}:${gatewayip}:${netmask}:${hostname}" \
++		"::off\0" \
++	"ramroot=/dev/ram0 rw\0" \
++	"ramrootfstype=ext2\0" \
++	"mmcargs=setenv bootargs console=${console} " \
++		"${optargs} " \
++		"root=${mmcroot} " \
++		"rootfstype=${mmcrootfstype}\0" \
++	"spiroot=/dev/mtdblock4 rw\0" \
++	"spirootfstype=jffs2\0" \
++	"spisrcaddr=0xe0000\0" \
++	"spiimgsize=0x362000\0" \
++	"spibusno=0\0" \
++	"spiargs=setenv bootargs console=${console} " \
++		"${optargs} " \
++		"root=${spiroot} " \
++		"rootfstype=${spirootfstype}\0" \
++	"netargs=setenv bootargs console=${console} " \
++		"${optargs} " \
++		"root=/dev/nfs " \
++		"nfsroot=${serverip}:${rootpath},${nfsopts} rw " \
++		"ip=dhcp\0" \
++	"bootenv=uEnv.txt\0" \
++	"loadbootscript=load mmc ${mmcdev} ${loadaddr} boot.scr\0" \
++	"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
++		"source ${loadaddr}\0" \
++	"loadbootenv=load mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
++	"importbootenv=echo Importing environment from mmc ...; " \
++		"env import -t -r $loadaddr $filesize\0" \
++	"ramargs=setenv bootargs console=${console} " \
++		"${optargs} " \
++		"root=${ramroot} " \
++		"rootfstype=${ramrootfstype}\0" \
++	"loadramdisk=load mmc ${mmcdev} ${rdaddr} ramdisk.gz\0" \
++	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
++	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
++	"mmcloados=run mmcargs; " \
++		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
++			"if run loadfdt; then " \
++				"bootz ${loadaddr} - ${fdtaddr}; " \
++			"else " \
++				"if test ${boot_fdt} = try; then " \
++					"bootz; " \
++				"else " \
++					"echo WARN: Cannot load the DT; " \
++				"fi; " \
++			"fi; " \
++		"else " \
++			"bootz; " \
++		"fi;\0" \
++	"mmcboot=mmc dev ${mmcdev}; " \
++		"if mmc rescan; then " \
++			"echo SD/MMC found on device ${mmcdev};" \
++			"if run loadbootscript; then " \
++				"run bootscript;" \
++			"else " \
++				"if run loadbootenv; then " \
++					"echo Loaded environment from ${bootenv};" \
++					"run importbootenv;" \
++				"fi;" \
++				"if test -n $uenvcmd; then " \
++					"echo Running uenvcmd ...;" \
++					"run uenvcmd;" \
++				"fi;" \
++				"if run loadimage; then " \
++					"run mmcloados;" \
++				"fi;" \
++			"fi ;" \
++		"fi;\0" \
++	"spiboot=echo Booting from spi ...; " \
++		"run spiargs; " \
++		"sf probe ${spibusno}:0; " \
++		"sf read ${loadaddr} ${spisrcaddr} ${spiimgsize}; " \
++		"bootz ${loadaddr}\0" \
++	"netboot=echo Booting from network ...; " \
++		"setenv autoload no; " \
++		"dhcp; " \
++		"tftp ${loadaddr} ${bootfile}; " \
++		"tftp ${fdtaddr} ${fdtfile}; " \
++		"run netargs; " \
++		"bootz ${loadaddr} - ${fdtaddr}\0" \
++	"ramboot=echo Booting from ramdisk ...; " \
++		"run ramargs; " \
++		"bootz ${loadaddr} ${rdaddr} ${fdtaddr}\0" \
++	"findfdt="\
++		"if test $board_name = A335BONE; then " \
++			"setenv fdtfile am335x-bone.dtb; fi; " \
++		"if test $board_name = A335BNLT; then " \
++			"setenv fdtfile am335x-boneblack.dtb; fi; " \
++		"if test $board_name = A33515BB; then " \
++			"setenv fdtfile am335x-evm.dtb; fi; " \
++		"if test $board_name = A335X_SK; then " \
++			"setenv fdtfile am335x-evmsk.dtb; fi; " \
++		"if test $fdtfile = undefined; then " \
++			"echo WARNING: Could not determine device tree to use; fi; \0" \
++	NANDARGS 
++#endif
++
++#define CONFIG_BOOTCOMMAND \
++	"if userbutton; then " \
++	"setenv bootenv user.txt;" \
++	"fi;" \
++	"run findfdt; " \
++	"run mmcboot;" \
++	"setenv mmcdev 1; " \
++	"setenv bootpart 1:2; " \
++	"run mmcboot;" \
++	"run nandboot;"
++
++/* NS16550 Configuration */
++#define CONFIG_SYS_NS16550_COM1		0x44e09000	/* Base EVM has UART0 */
++#define CONFIG_SYS_NS16550_COM2		0x48022000	/* UART1 */
++#define CONFIG_SYS_NS16550_COM3		0x48024000	/* UART2 */
++#define CONFIG_SYS_NS16550_COM4		0x481a6000	/* UART3 */
++#define CONFIG_SYS_NS16550_COM5		0x481a8000	/* UART4 */
++#define CONFIG_SYS_NS16550_COM6		0x481aa000	/* UART5 */
++#define CONFIG_BAUDRATE			115200
++
++#define CONFIG_CMD_EEPROM
++#define CONFIG_ENV_EEPROM_IS_ON_I2C
++#define CONFIG_SYS_I2C_EEPROM_ADDR	0x50	/* Main EEPROM */
++#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	2
++#define CONFIG_SYS_I2C_MULTI_EEPROMS
++
++/* PMIC support */
++#define CONFIG_POWER_TPS65217
++#define CONFIG_IS_NOWHERE
++
++/* SPL */
++#ifndef CONFIG_NOR_BOOT
++#define CONFIG_SPL_POWER_SUPPORT
++#define CONFIG_SPL_YMODEM_SUPPORT
++
++/* Bootcount using the RTC block */
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_AM33XX
++#define CONFIG_SYS_BOOTCOUNT_BE
++
++/* USB gadget RNDIS */
++#define CONFIG_SPL_MUSB_NEW_SUPPORT
++
++#define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/am33xx/u-boot-spl.lds"
++#endif
++
++
++
++#ifdef CONFIG_MUSB_HOST
++#define CONFIG_CMD_USB
++#define CONFIG_USB_STORAGE
++#endif
++
++#ifdef CONFIG_MUSB_GADGET
++//#define CONFIG_USB_ETHER
++#define CONFIG_USB_ETH_RNDIS
++#define CONFIG_USBNET_HOST_ADDR	"de:ad:be:af:00:00"
++
++/* USB TI's IDs */
++#define CONFIG_G_DNL_VENDOR_NUM 0x0403
++#define CONFIG_G_DNL_PRODUCT_NUM 0xBD00
++#define CONFIG_G_DNL_MANUFACTURER "Texas Instruments"
++#endif /* CONFIG_MUSB_GADGET */
++
++#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_USBETH_SUPPORT)
++/* disable host part of MUSB in SPL */
++#undef CONFIG_MUSB_HOST
++/* disable EFI partitions and partition UUID support */
++#undef CONFIG_PARTITION_UUIDS
++#undef CONFIG_EFI_PARTITION
++/* General network SPL  */
++#define CONFIG_SPL_NET_SUPPORT
++#define CONFIG_SPL_ENV_SUPPORT
++#define CONFIG_SPL_NET_VCI_STRING	"AM335x U-Boot SPL"
++#endif
++
++
++/* Network. */
++#define CONFIG_PHY_GIGE
++#define CONFIG_PHYLIB
++#define CONFIG_PHY_SMSC
++
++
++#define CONFIG_ENV_IS_NOWHERE
++
++#endif	/* ! __CONFIG_AM335X_EVM_H */
+-- 
+2.13.7
+

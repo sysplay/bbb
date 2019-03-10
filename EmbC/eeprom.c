@@ -7,7 +7,7 @@
 
 void eeprom_init(void)
 {
-	i2c_init(standard);
+	i2c_init(fast);
 }
 void eeprom_shut(void)
 {
@@ -41,7 +41,6 @@ int eeprom_write(uint8_t *addr, uint8_t *data, int len)
 	}
 	return 0;
 }
-
 int eeprom_read(uint8_t *addr, uint8_t *data, int len)
 {
 	unsigned long eeprom_addr = (unsigned long)(addr);

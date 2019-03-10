@@ -17,5 +17,5 @@ SECTIONS
 		. = ALIGN(4);
 		bss_end = .;
 	}
-	stack_top = 0x4030B800;	/* 6KiB stack */
+	stack_top = 0x4030CE00;	/* 6KiB stack */
 }

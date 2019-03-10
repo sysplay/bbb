@@ -28,14 +28,24 @@ void i2c_init(I2CMode mode)
 	I2C0_PSC =  SCLK / 24 - 1; // Set up approx. 24MHz module clock (ICLK) = SCLK / (PSC + 1)
 	/*
 	 * Set up I2C clock for 100Kbps or 400Kbps = 1/t
-	 * 1/800K = tLow = (SCLL + 7) * 1/ICLK => SCLL = 24M / 800K - 7
-	 * 1/800K = tHigh = (SCLH + 5) * 1/ICLK => SCLH = 24M / 800K - 5
+	 * 1/200K = tLow = (SCLL + 7) * 1/ICLK => SCLL = 24M / 200K - 7 = 113
+	 * 1/200K = tHigh = (SCLH + 5) * 1/ICLK => SCLH = 24M / 200K - 5 = 115
+	 * 1/800K = tLow = (SCLL + 7) * 1/ICLK => SCLL = 24M / 800K - 7 = 23
+	 * 1/800K = tHigh = (SCLH + 5) * 1/ICLK => SCLH = 24M / 800K - 5 = 25
 	 */
-	I2C0_SCLL = 23;
-	I2C0_SCLH = 25;
+	if (mode == standard)
+	{
+		I2C0_SCLL = 113;
+		I2C0_SCLH = 115;
+	}
+	else if (mode == fast)
+	{
+		I2C0_SCLL = 23;
+		I2C0_SCLH = 25;
+	}
 
 	I2C0_CON = (0 << 12) | // Standard / Fast mode
-				(0 << 7); // 7-bit own address
+				(0 << 8); // 7-bit slave address
 
 	I2C0_CON |= (1 << 15); // Enable I2C
 

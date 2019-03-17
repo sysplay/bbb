@@ -1,3 +1,4 @@
 mmcargs=setenv bootargs console=ttyO0,115200n8 root=/dev/mmcblk0p2 rootfstype=ext2 rootwait
-uenvcmd=run mmcargs;fatload mmc 0:1 80200000 uImage; fatload mmc 0:1 82000000 am335x-boneblack.dtb; bootm 0x80200000 - 0x82000000;
-
+loadfdt=ext2load mmc ${mmcdev}:2 ${fdtaddr} /boot/${fdtfile};
+loaduimage=ext2load mmc 0:2 ${loadaddr} /boot/zImage;
+uenvcmd=run loaduimage;run loadfdt; run mmcargs; bootz ${loadaddr} - ${fdtaddr};

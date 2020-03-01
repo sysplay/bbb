@@ -12,7 +12,6 @@ tar -xvf gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux.tar.xz -C /opt
 # Setup up automatic cross toolchain PATH setup
 cat > /etc/profile.d/arm.sh << "CONTENT"
 # Setting up the path for ARM's cross toolchain
-
 export PATH=${PATH}:/opt/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin
 CONTENT
 
@@ -26,3 +25,7 @@ then
 		yum install glibc.i686 libstdc++.i686 zlib.i686 lzop ncurses-devel ncurses-libs.i686
 	fi
 fi
+
+echo
+echo "*** Now, please logout and login back for the toolchain path to get set ***"
+echo

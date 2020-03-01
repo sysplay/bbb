@@ -3,6 +3,8 @@
 #include "switch.h"
 
 #ifdef INTR_BASED_SWITCH
+#include "interrupt.h"
+
 void handler(void)
 {
 	if (switch_pressed()) // This also clears the switch intr status
